@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>createContract.css</file>
+        <file>imgs/contract.png</file>
+        <file>imgs/cryptotoken.png</file>
+        <file>imgs/labelChooseType.png</file>
+        <file>imgs/close.png</file>
+        <file>imgs/find.png</file>
+        <file>imgs/redo.png</file>
+        <file>imgs/undo.png</file>
+        <file>imgs/compile.png</file>
+        <file>imgs/settings.png</file>
+        <file>imgs/wizard.png</file>
+        <file>soljson.js</file>
+        <file>imgs/error.png</file>
+        <file>imgs/warning.png</file>
+    </qresource>
+</RCC>
