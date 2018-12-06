@@ -198,19 +198,35 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Build</string>
+          <string/>
          </property>
          <property name="text">
-          <string>Start to compile</string>
+          <string> Start to compile</string>
          </property>
          <property name="icon">
           <iconset resource="res.qrc">
            <normaloff>:/imgs/compile.png</normaloff>:/imgs/compile.png</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>14</width>
+           <height>14</height>
+          </size>
+         </property>
         </widget>
        </item>
        <item>
         <widget class="QComboBox" name="comboBoxChooseDeploy"/>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="progressBarDownloadSolc">
+         <property name="value">
+          <number>0</number>
+         </property>
+         <property name="format">
+          <string>solc download - %p%</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="labelBuildStatus">

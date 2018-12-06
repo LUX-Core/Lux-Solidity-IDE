@@ -11,8 +11,9 @@
         <file>imgs/compile.png</file>
         <file>imgs/settings.png</file>
         <file>imgs/wizard.png</file>
-        <file>soljson.js</file>
         <file>imgs/error.png</file>
         <file>imgs/warning.png</file>
+        <file>imgs/Check.png</file>
+        <file>imgs/download.png</file>
     </qresource>
 </RCC>

@@ -5,6 +5,17 @@ QFrame#csTypeWidget
     background-color: #ededed;
 }
 
+QWidget#EditContract  .QComboBox#comboBoxCompilerVersion
+{
+qproperty-iconSize: 12px;
+}
+
+QWidget#EditContract  .QPushButton#pushButtonBuild
+{
+qproperty-iconSize: 14px;
+}
+
+
 QWidget#EditContract  .QListWidget#listWidgetErrWarnings::item
 {
 border: 2px dashed gray;

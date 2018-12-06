@@ -4,8 +4,8 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-#QT += qml
+QT  += core gui
+QT  += network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = EditContract
@@ -50,7 +50,8 @@ HEADERS += \
     find/searchresulttreeitemdelegate.h \
     find/treewidgetfindresults.h \
     searchwgt.h \
-    editcontract.h
+    editcontract.h \
+    guiconstants.h
 
 FORMS += \
     cstypewidget.ui \
@@ -66,3 +67,12 @@ RESOURCES += \
 install.path = $$OUT_PWD/SolCompilers
 install.files += SolCompilers/*
 INSTALLS +=install
+
+unix:!macx{ LIBS += -L/media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/ -lssl
+INCLUDEPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
+DEPENDPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include }
+
+unix:!macx{ LIBS += -L/media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/ -lcrypto
+INCLUDEPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
+DEPENDPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include }
+
