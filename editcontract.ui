@@ -141,6 +141,13 @@
         <widget class="QComboBox" name="comboBoxCompilerVersion"/>
        </item>
        <item>
+        <widget class="QPushButton" name="pushButtonAddCompiler">
+         <property name="text">
+          <string>Add Compiler</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="checkBoxOptimization">
          <property name="text">
           <string>Enable optimization</string>

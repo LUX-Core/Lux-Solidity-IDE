@@ -25,6 +25,8 @@ class EditContract : public QWidget
 public:
     explicit EditContract(QWidget *parent = 0);
     ~EditContract();
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 private:
     Ui::EditContract *ui;
     bool bUbuntu {false};
@@ -36,15 +38,16 @@ private:
     QSettings settings;
     //test
     const QString strCompilePath{"SolCompilers"};
-    QString strCompileExe {""};
     void fillInCompilerVersions();
     //get download links of solc
     //in https://github.com/ethereum/solidity/releases ubuntu and windows releases
     void getDownloadLinksSolc();
-    QMap<QString, QString> downloadLinksSolc;
+    QMap<QString, QString> downloadLinksSolc; //<version, downloadLink>
+    QMap<QString, QString> pathsSolc; //<version, path>
     void customizeComboBoxCompiler(int index, bool bDownload);
     void startBuild();
 private slots:
+    void slotAddSolcManually();
     void slotDownSolcFinished();
     void slotProgressDownSolc(qint64 bytesReceived,
                               qint64 bytesTotal);
@@ -54,7 +57,6 @@ private slots:
     void slotBuildClicked();
     void slotBuildFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void slotBuildProcError(QProcess::ProcessError error);
-    void slotVersionChoosed(QString newVersion);
     void slotErrWarningClicked(QListWidgetItem *item);
     void slotOptimizationStateChanged(int state);
     void slotChooseNewCompiler(int index);

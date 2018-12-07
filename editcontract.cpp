@@ -1,4 +1,4 @@
-#include <QShortcut>
+﻿#include <QShortcut>
 #include <QFile>
 #include <QTemporaryDir>
 #include <QMessageBox>
@@ -16,12 +16,20 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QPalette>
+#include <QFileDialog>
+#include <QLabel>
+#include <QFontMetrics>
 
 #include "editcontract.h"
 #include "ui_editcontract.h"
 
 //settings
 #define defSolcVersion "SolcVersion"
+
+//file with local solc compilers
+#define defLocalSolcFile "local"
+#define defPathCompiler "path"
+#define defVersionCompiler "version"
 
 EditContract::EditContract(QWidget *parent) :
     QWidget(parent),
@@ -105,12 +113,9 @@ EditContract::EditContract(QWidget *parent) :
     //ui->comboBoxCompilerVersion
     {
         fillInCompilerVersions();
-        connect(ui->comboBoxCompilerVersion, &QComboBox::currentTextChanged,
-                this, &EditContract::slotVersionChoosed);
         connect(ui->comboBoxCompilerVersion, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
               [=](int index){ slotChooseNewCompiler(index); });
         slotChooseNewCompiler(ui->comboBoxCompilerVersion->currentIndex());
-        slotVersionChoosed(ui->comboBoxCompilerVersion->currentText());
     }
 
     connect(ui->listWidgetErrWarnings, &QListWidget::itemClicked,
@@ -119,6 +124,10 @@ EditContract::EditContract(QWidget *parent) :
             this, &EditContract::slotOptimizationStateChanged);
 
     ui->progressBarDownloadSolc->hide();
+    ui->listWidgetErrWarnings->installEventFilter(this);
+
+    connect(ui->pushButtonAddCompiler, &QPushButton::clicked,
+            this, &EditContract::slotAddSolcManually);
 }
 
 //get download links of solc
@@ -129,6 +138,56 @@ void EditContract::getDownloadLinksSolc()
     auto reply = nam->get(req);
     connect(reply, &QNetworkReply::finished,
             this, &EditContract::slotDownLinksSolcFinished);
+}
+
+void EditContract::slotAddSolcManually()
+{
+    QString newSolc = QFileDialog::getOpenFileName(this, tr("Add Solc Compiler"),QCoreApplication::applicationDirPath(),
+                                 "solc");
+    if(! newSolc.isEmpty())
+    {
+        QString version;
+        //fill in version
+        {
+            QProcess proc;
+            proc.start(newSolc, QStringList() << "--version");
+            proc.waitForFinished(1000);
+            QRegExp reg_exp("\\d{1,2}[.]\\d{1,2}[.]\\d{1,2}");     
+            QString output = proc.readAllStandardOutput();
+            int pos = reg_exp.indexIn(output);
+            if (pos != -1) 
+                version = output.mid(pos);
+        }
+        if(version.isEmpty())
+        {
+            QMessageBox::critical(this, tr("Add Solc Compiler"), tr("It is not solc compiler!"));
+            return;
+        }
+        
+        QString localSolcFileName = QCoreApplication::applicationDirPath() + "/" + strCompilePath + "/" + QString(defLocalSolcFile);
+        QFile file(localSolcFileName);
+        QJsonDocument documentOld;
+        if(file.open(QIODevice::ReadOnly))
+        {
+            documentOld = QJsonDocument::fromJson(file.readAll());
+            file.close();
+        }
+        QJsonArray array = documentOld.array();
+        QJsonObject newObj;
+        newObj[defPathCompiler] = newSolc;
+        newObj[defVersionCompiler] = version; 
+        array.append(newObj);
+        QJsonDocument documentNew(array);            
+        if(file.open(QIODevice::Append))
+        {
+            file.write(documentNew.toJson());
+            file.close();
+        }
+        pathsSolc[version] = newSolc;
+        ui->comboBoxCompilerVersion->addItem(version.remove("\n").remove("\r"));
+        customizeComboBoxCompiler(ui->comboBoxCompilerVersion->count() - 1, false);
+        ui->comboBoxCompilerVersion->setCurrentText(version);
+    }
 }
 
 void EditContract::slotDownLinksSolcFinished()
@@ -258,12 +317,6 @@ void EditContract::slotErrWarningClicked(QListWidgetItem *item)
     }
 }
 
-void EditContract::slotVersionChoosed(QString newVersion)
-{
-    strCompileExe = QCoreApplication::applicationDirPath()
-            + "/" + strCompilePath + "/" + newVersion + "/solc";
-}
-
 void EditContract::fillInCompilerVersions()
 {
     QDir versionsDir(QCoreApplication::applicationDirPath() + "/" + strCompilePath);
@@ -273,17 +326,86 @@ void EditContract::fillInCompilerVersions()
         if(subDir.entryList(QDir::Files).contains("solc"))
         {
             ui->comboBoxCompilerVersion->addItem(dir);
+            //TODO add windows,...
+
+#ifdef __linux__
+            pathsSolc[dir] = QCoreApplication::applicationDirPath() + "/" + strCompilePath
+                    + "/" + dir + "/solc";
+#endif
             customizeComboBoxCompiler(ui->comboBoxCompilerVersion->count() - 1, false);
         }
     }
+    
+    QString localSolcFileName = QCoreApplication::applicationDirPath() + "/" + strCompilePath + "/" + QString(defLocalSolcFile);
+    QFile file(localSolcFileName);
+    QJsonDocument documentOld;
+    if(file.open(QIODevice::ReadOnly))
+    {
+        documentOld = QJsonDocument::fromJson(file.readAll());
+        file.close();
+    }
+    QJsonArray array = documentOld.array();
+    for(int i=0; i<array.size(); i++)
+    {
+        auto obj = array[i].toObject();
+        QString path = obj[defPathCompiler].toString();
+        QString version = obj[defVersionCompiler].toString();
+        if(!path.isEmpty()
+                &&
+           !version.isEmpty())
+        {
+            ui->comboBoxCompilerVersion->addItem(version);
+            pathsSolc[version] = path;
+            customizeComboBoxCompiler(ui->comboBoxCompilerVersion->count() - 1, false);
+        }
+    }
+    
     QString savedVersion = settings.value(defSolcVersion).toString();
     if(ui->comboBoxCompilerVersion->findText(savedVersion))
         ui->comboBoxCompilerVersion->setCurrentText(savedVersion);
 }
 
+bool EditContract::eventFilter(QObject *watched, QEvent *event)
+{
+    if(ui->listWidgetErrWarnings == qobject_cast<QListWidget*>(watched))
+    {
+        if(QEvent::Resize == event->type())
+        {
+            for(int i=0; i<ui->listWidgetErrWarnings->count(); i++)
+            {
+                auto index = ui->listWidgetErrWarnings->model()->index(i,0);
+                auto item = ui->listWidgetErrWarnings->item(i);
+                QLabel * label = qobject_cast<QLabel *>(ui->listWidgetErrWarnings->indexWidget(index));
+                QFontMetrics fm(item->font());
+                //TODO understand why 4*spacing (not 2)...
+                int height = fm.boundingRect(QRect(0,0, ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(), 100),
+                                           Qt::TextWordWrap, label->text()).size().height();
+                label->setMinimumSize(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
+                                            height));
+                item->setSizeHint(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
+                                        height));
+            }
+        }
+    }
+
+    QListWidgetItem * item = reinterpret_cast<QListWidgetItem *>(watched->property("item").toLongLong());
+    if(nullptr != item)
+    {
+        if(QEvent::MouseButtonPress == event->type())
+        {
+            item->setSelected(true);
+            return true;
+        }
+    }
+
+    return QWidget::eventFilter(watched, event);
+}
+
 void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     ui->pushButtonBuild->setEnabled(true);
+    ui->pushButtonAddCompiler->setEnabled(true);
+    ui->comboBoxCompilerVersion->setEnabled(true);
     if(QProcess::CrashExit == exitStatus)
     {
         QMessageBox::critical(this, "Smart contract Build",
@@ -312,10 +434,32 @@ void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStat
         //fill in listWidgetErrWarnings
         foreach(auto strWarning, err_warnings)
         {
+            QString textItem;
             if(strWarning.contains(QCoreApplication::applicationDirPath() + "/" + strCompilePath))
-                ui->listWidgetErrWarnings->addItem(strWarning);
+                textItem = strWarning;
             else
-                ui->listWidgetErrWarnings->addItem("contract" + strWarning);
+                textItem = "contract" + strWarning;
+            QListWidgetItem * item = new QListWidgetItem();
+            ui->listWidgetErrWarnings->addItem(item);
+            QLabel * label = new QLabel(ui->listWidgetErrWarnings);
+            label->setWordWrap(true);
+            label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+            label->setText(textItem);
+            label->setIndent(10);
+            label->setAlignment(Qt::AlignLeft);
+            label->setProperty("item", reinterpret_cast<qlonglong>(item));
+            label->installEventFilter(this);
+            //TODO understand why 4*spacing (not 2)...
+            QFontMetrics fm(item->font());
+            int height = fm.boundingRect(QRect(0,0, ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(), 100),
+                                       Qt::TextWordWrap, textItem).size().height();
+            label->setMinimumSize(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
+                                        height));
+            item->setSizeHint(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
+                                    height));
+            ui->listWidgetErrWarnings->setItemWidget(item,
+                                                      label);
+
         }
         bool bSuccess = true;
         //add err_warnings to codeEdit
@@ -381,9 +525,11 @@ void EditContract::slotProgressDownSolc(qint64 bytesReceived, qint64 bytesTotal)
 void EditContract::slotBuildProcError(QProcess::ProcessError error)
 {
     ui->pushButtonBuild->setEnabled(true);
+    ui->pushButtonAddCompiler->setEnabled(true);
+    ui->comboBoxCompilerVersion->setEnabled(true);
     QMetaEnum metaEnum = QMetaEnum::fromType<QProcess::ProcessError>();
     QString strError = metaEnum.valueToKey(error);
-    QMessageBox::critical(this, "Smart contract Build",
+    QMessageBox::critical(this, tr("Smart contract Build"),
                           "Crash error - " + strError);
 }
 
@@ -430,6 +576,7 @@ void EditContract::slotBuildClicked()
     {
         ui->comboBoxCompilerVersion->setEnabled(false);
         ui->pushButtonBuild->setEnabled(false);
+        ui->pushButtonAddCompiler->setEnabled(false);
         QString downloadLink = downloadLinksSolc[ui->comboBoxCompilerVersion->currentText()];
         auto reply = nam->get(QNetworkRequest(QUrl(downloadLink)));
         reply->setProperty("Version", ui->comboBoxCompilerVersion->currentText());
@@ -448,7 +595,7 @@ void EditContract::slotDownSolcFinished()
         ui->pushButtonBuild->setEnabled(true);
         ui->progressBarDownloadSolc->setEnabled(false);
         QString data = QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(reply->error());
-        ui->labelBuildStatus->setText("Could not download compiler. Error - " + data);
+        ui->labelBuildStatus->setText(tr("Could not download compiler. Error - ") + data);
         ui->labelBuildStatus->setProperty("success", false);
         ui->labelBuildStatus->style()->unpolish(ui->labelBuildStatus);
         ui->labelBuildStatus->style()->polish(ui->labelBuildStatus);
@@ -474,8 +621,6 @@ void EditContract::slotDownSolcFinished()
         }
     }
 
-    ui->comboBoxCompilerVersion->setEnabled(true);
-    ui->pushButtonBuild->setEnabled(true);
     ui->progressBarDownloadSolc->hide();
 
     QByteArray dataReply = reply->readAll();
@@ -483,6 +628,7 @@ void EditContract::slotDownSolcFinished()
     QString version = reply->property("Version").toString();
     versionsDir.mkdir(version);
     bool bSuccess = false;
+    //TODO add windows,...
     if(bUbuntu)
     {
         QFile file_compiler(versionsDir.absoluteFilePath(version + "/solc.zip"));
@@ -506,7 +652,6 @@ void EditContract::slotDownSolcFinished()
                         bSuccess &= QFile::copy(versionsDir.absoluteFilePath(version + "/output/" + file),
                                     versionsDir.absoluteFilePath(version + "/" + file));
                 }
-
                 output.removeRecursively();
             }
         }
@@ -514,12 +659,14 @@ void EditContract::slotDownSolcFinished()
 
     if(bSuccess)
     {
+        pathsSolc[version]
+                = versionsDir.absoluteFilePath(version + "/solc");
         customizeComboBoxCompiler(ui->comboBoxCompilerVersion->currentIndex(), false);
         startBuild();
     }
     else
     {
-        ui->labelBuildStatus->setText("Could not create new compiler");
+        ui->labelBuildStatus->setText(tr("Could not create new compiler"));
         ui->labelBuildStatus->setProperty("success", false);
         ui->labelBuildStatus->style()->unpolish(ui->labelBuildStatus);
         ui->labelBuildStatus->style()->polish(ui->labelBuildStatus);
@@ -541,8 +688,8 @@ void EditContract::startBuild()
     QFile file_tmp(tmpPath);
     if(!file_tmp.open(QIODevice::WriteOnly))
     {
-        QMessageBox::critical(this, "Smart contract Build",
-                              "Can not create tmp file to build");
+        QMessageBox::critical(this, tr("Smart contract Build"),
+                              tr("Can not create tmp file to build"));
         return;
     }
     file_tmp.write(ui->codeEdit->document()->toPlainText().toLocal8Bit());
@@ -553,7 +700,8 @@ void EditContract::startBuild()
         int nRuns = ui->spinBoxRuns->value();
         params = " --optimize-runs " + QString::number(nRuns) + params;
     }
-    process_build->start(strCompileExe
+    QString version = ui->comboBoxCompilerVersion->currentText();
+    process_build->start(pathsSolc[version]
                          + params + tmpPath
                          + " -o " + tmpDir->filePath("output"));
 }
