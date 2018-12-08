@@ -29,10 +29,12 @@ protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 private:
     Ui::EditContract *ui;
+#ifdef __linux__
     bool bUbuntu {false};
+#endif
     QPointer<SearchWgt> search_Wgt;
     QPointer<QProcess> process_build;
-    QPointer<QProcess> process_distrib;
+    QPointer<QProcess> process_linux_distrib;
     QTemporaryDir * tmpDir;
     QNetworkAccessManager * nam;
     QSettings settings;
@@ -52,7 +54,9 @@ private slots:
     void slotProgressDownSolc(qint64 bytesReceived,
                               qint64 bytesTotal);
     void slotDownLinksSolcFinished();
+#ifdef __linux__
     void slotProcDistribFinished(int exitCode, QProcess::ExitStatus exitStatus);
+#endif
     void slotSearchClicked();
     void slotBuildClicked();
     void slotBuildFinished(int exitCode, QProcess::ExitStatus exitStatus);

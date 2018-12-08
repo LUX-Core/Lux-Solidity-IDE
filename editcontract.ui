@@ -230,6 +230,12 @@
          <property name="value">
           <number>0</number>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+         <property name="invertedAppearance">
+          <bool>false</bool>
+         </property>
          <property name="format">
           <string>solc download - %p%</string>
          </property>

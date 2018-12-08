@@ -100,15 +100,16 @@ EditContract::EditContract(QWidget *parent) :
     #ifdef _WIN32
         getDownloadLinksSolc();
     #endif
+    #ifdef __linux__
     //detect bUbuntu
     {
-    #ifdef __linux__
-        process_distrib = new QProcess(this);
-        connect(process_distrib.data(), static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
+        process_linux_distrib = new QProcess(this);
+        connect(process_linux_distrib.data(), static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
                 this, [this](int exitCode, QProcess::ExitStatus exitStatus){ this->slotProcDistribFinished(exitCode, exitStatus);});
-        process_distrib->start("lsb_release", QStringList() << "-i");
-    #endif
+        process_linux_distrib->start("lsb_release", QStringList() << "-i");
     }
+    #endif
+
 
     //ui->comboBoxCompilerVersion
     {
@@ -116,10 +117,12 @@ EditContract::EditContract(QWidget *parent) :
         connect(ui->comboBoxCompilerVersion, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
               [=](int index){ slotChooseNewCompiler(index); });
         slotChooseNewCompiler(ui->comboBoxCompilerVersion->currentIndex());
+        QListView * view = qobject_cast<QListView *>(ui->comboBoxCompilerVersion->view());
+        view->setSpacing(5);
     }
 
-    connect(ui->listWidgetErrWarnings, &QListWidget::itemClicked,
-            this, &EditContract::slotErrWarningClicked);
+//    connect(ui->listWidgetErrWarnings, &QListWidget::itemClicked,
+//            this, &EditContract::slotErrWarningClicked);
     connect(ui->checkBoxOptimization, &QCheckBox::stateChanged,
             this, &EditContract::slotOptimizationStateChanged);
 
@@ -142,8 +145,15 @@ void EditContract::getDownloadLinksSolc()
 
 void EditContract::slotAddSolcManually()
 {
+    QString exeName;
+#ifdef __linux__
+    exeName = "solc";
+#endif
+#ifdef _WIN32
+    exeName = "solc.exe";
+#endif
     QString newSolc = QFileDialog::getOpenFileName(this, tr("Add Solc Compiler"),QCoreApplication::applicationDirPath(),
-                                 "solc");
+                                 exeName);
     if(! newSolc.isEmpty())
     {
         QString version;
@@ -156,7 +166,7 @@ void EditContract::slotAddSolcManually()
             QString output = proc.readAllStandardOutput();
             int pos = reg_exp.indexIn(output);
             if (pos != -1) 
-                version = output.mid(pos);
+                version = output.mid(pos).remove("\n").remove("\r");
         }
         if(version.isEmpty())
         {
@@ -184,7 +194,7 @@ void EditContract::slotAddSolcManually()
             file.close();
         }
         pathsSolc[version] = newSolc;
-        ui->comboBoxCompilerVersion->addItem(version.remove("\n").remove("\r"));
+        ui->comboBoxCompilerVersion->addItem(version);
         customizeComboBoxCompiler(ui->comboBoxCompilerVersion->count() - 1, false);
         ui->comboBoxCompilerVersion->setCurrentText(version);
     }
@@ -212,6 +222,7 @@ void EditContract::slotDownLinksSolcFinished()
         {
             QJsonObject asset = assetsArray[iAsset].toObject();
             QString namePackage = asset["name"].toString();
+#ifdef __linux__
             if(bUbuntu)
             {
                 if(namePackage.contains("ubuntu"))
@@ -221,6 +232,15 @@ void EditContract::slotDownLinksSolcFinished()
                     break;
                 }
             }
+#endif
+#ifdef _WIN32
+            if(namePackage.contains("windows"))
+            {
+                QString downloadUrl = asset["browser_download_url"].toString();
+                downloadLinksSolc[nameVersion] = downloadUrl;
+                break;
+            }
+#endif
         }
     }
 
@@ -268,23 +288,25 @@ void EditContract::slotChooseNewCompiler(int index)
     {
         QPalette pal = ui->comboBoxCompilerVersion->palette();
         pal.setBrush(QPalette::ButtonText, Qt::gray);
+        pal.setBrush(QPalette::Text, Qt::gray);
         ui->comboBoxCompilerVersion->setPalette(pal);
     }
     else
     {
         QPalette pal = ui->comboBoxCompilerVersion->palette();
         pal.setBrush(QPalette::ButtonText, Qt::black);
+        pal.setBrush(QPalette::Text, Qt::black);
         ui->comboBoxCompilerVersion->setPalette(pal);
     }
 }
 
-
+#ifdef __linux__
 void EditContract::slotProcDistribFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     Q_UNUSED(exitCode)
     if(QProcess::NormalExit == exitStatus)
     {
-        auto baData = process_distrib->readAllStandardOutput();
+        auto baData = process_linux_distrib->readAllStandardOutput();
         if(baData.contains("Ubuntu"))
         {
             bUbuntu = true;
@@ -292,7 +314,7 @@ void EditContract::slotProcDistribFinished(int exitCode, QProcess::ExitStatus ex
         }
     }
 }
-
+#endif
 void EditContract::slotOptimizationStateChanged(int state)
 {
     if(Qt::Unchecked == state)
@@ -304,7 +326,8 @@ void EditContract::slotOptimizationStateChanged(int state)
 
 void EditContract::slotErrWarningClicked(QListWidgetItem *item)
 {
-    QString err_warning = item->text();
+    QLabel * label = qobject_cast<QLabel*>(ui->listWidgetErrWarnings->itemWidget(item));
+    QString err_warning = label->text();
     QStringList params = err_warning.split(":",QString::SkipEmptyParts);
     if(params.size() > 3)
     {
@@ -323,15 +346,19 @@ void EditContract::fillInCompilerVersions()
     foreach(auto dir, versionsDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot))
     {
         QDir subDir(versionsDir.absoluteFilePath(dir));
-        if(subDir.entryList(QDir::Files).contains("solc"))
+        QString exeName;
+#ifdef __linux__
+            exeName = "solc";
+#endif
+#ifdef _WIN32
+            exeName = "solc.exe";
+#endif
+        if(subDir.entryList(QDir::Files).contains(exeName))
         {
             ui->comboBoxCompilerVersion->addItem(dir);
             //TODO add windows,...
-
-#ifdef __linux__
             pathsSolc[dir] = QCoreApplication::applicationDirPath() + "/" + strCompilePath
-                    + "/" + dir + "/solc";
-#endif
+                    + "/" + dir + "/" + exeName;
             customizeComboBoxCompiler(ui->comboBoxCompilerVersion->count() - 1, false);
         }
     }
@@ -394,6 +421,7 @@ bool EditContract::eventFilter(QObject *watched, QEvent *event)
         if(QEvent::MouseButtonPress == event->type())
         {
             item->setSelected(true);
+            slotErrWarningClicked(item);
             return true;
         }
     }
@@ -629,38 +657,50 @@ void EditContract::slotDownSolcFinished()
     versionsDir.mkdir(version);
     bool bSuccess = false;
     //TODO add windows,...
-    if(bUbuntu)
+    QFile file_compiler(versionsDir.absoluteFilePath(version + "/solc.zip"));
+    if(file_compiler.open(QIODevice::WriteOnly))
     {
-        QFile file_compiler(versionsDir.absoluteFilePath(version + "/solc.zip"));
-        if(file_compiler.open(QIODevice::WriteOnly))
+        file_compiler.write(dataReply);
+        file_compiler.close();
+        QProcess proc;
+        proc.setWorkingDirectory(versionsDir.absoluteFilePath(version));
+#ifdef __linux__
+        if(bUbuntu)
         {
-            file_compiler.write(dataReply);
-            file_compiler.close();
-            QProcess proc;
-            proc.setWorkingDirectory(versionsDir.absoluteFilePath(version));
             proc.start("unzip", QStringList() << "solc.zip" << "-d" << "output");
-            proc.waitForFinished();
-            if(QProcess::NormalExit == proc.exitStatus())
+        }
+#endif
+#ifdef _WIN32
+        proc.start("unzip.exe", QStringList() << "solc.zip" << "-d" << "output");
+#endif
+        proc.waitForFinished();
+        if(QProcess::NormalExit == proc.exitStatus())
+        {
+            QFile::remove(versionsDir.absoluteFilePath(version + "/solc.zip"));
+            QDir output(versionsDir.absoluteFilePath(version + "/output"));
+            auto files = output.entryList(QDir::Files);
+            bSuccess = true;
+            foreach(auto file, files)
             {
-                QFile::remove(versionsDir.absoluteFilePath(version + "/solc.zip"));
-                QDir output(versionsDir.absoluteFilePath(version + "/output"));
-                auto files = output.entryList(QDir::Files);
-                bSuccess = true;
-                foreach(auto file, files)
-                {
-                    if(file.contains("sol"))
-                        bSuccess &= QFile::copy(versionsDir.absoluteFilePath(version + "/output/" + file),
-                                    versionsDir.absoluteFilePath(version + "/" + file));
-                }
-                output.removeRecursively();
+                //if(file.contains("sol"))
+                bSuccess &= QFile::copy(versionsDir.absoluteFilePath(version + "/output/" + file),
+                            versionsDir.absoluteFilePath(version + "/" + file));
             }
+            output.removeRecursively();
         }
     }
 
+
     if(bSuccess)
     {
+#ifdef __linux__
         pathsSolc[version]
                 = versionsDir.absoluteFilePath(version + "/solc");
+#endif
+#ifdef _WIN32
+        pathsSolc[version]
+                = versionsDir.absoluteFilePath(version + "/solc.exe");
+#endif
         customizeComboBoxCompiler(ui->comboBoxCompilerVersion->currentIndex(), false);
         startBuild();
     }
@@ -701,6 +741,7 @@ void EditContract::startBuild()
         params = " --optimize-runs " + QString::number(nRuns) + params;
     }
     QString version = ui->comboBoxCompilerVersion->currentText();
+    qDebug() << pathsSolc[version];
     process_build->start(pathsSolc[version]
                          + params + tmpPath
                          + " -o " + tmpDir->filePath("output"));

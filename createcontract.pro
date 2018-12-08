@@ -64,15 +64,43 @@ FORMS += \
 RESOURCES += \
     res.qrc
 
+
+unix:!macx{
+
+LIBS += -L/media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/ -lssl
+INCLUDEPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
+DEPENDPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
+
+LIBS += -L/media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/ -lcrypto
+INCLUDEPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
+DEPENDPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
+
 install.path = $$OUT_PWD/SolCompilers
 install.files += SolCompilers/*
 INSTALLS +=install
+}
 
-unix:!macx{ LIBS += -L/media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/ -lssl
-INCLUDEPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
-DEPENDPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include }
+win32{
 
-unix:!macx{ LIBS += -L/media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/ -lcrypto
-INCLUDEPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include
-DEPENDPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Projects/openssl-1.0.2q/include }
+CONFIG(release, debug|release){
+depends.path = $$OUT_PWD/release
+depends.files = windows-dependecies/*
+INSTALLS +=depends
+
+install.path = $$OUT_PWD/release/SolCompilers
+install.files += SolCompilers/*
+INSTALLS +=install
+}
+
+CONFIG(debug, debug|release){
+depends.path = $$OUT_PWD/debug
+depends.files = windows-dependecies/*
+INSTALLS +=depends
+
+install.path = $$OUT_PWD/debug/SolCompilers
+install.files += SolCompilers/*
+INSTALLS +=install
+}
+
+}
 
