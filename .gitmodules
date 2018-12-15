@@ -1,0 +1,6 @@
+[submodule "openzeppelin-solidity"]
+	path = openzeppelin-solidity
+	url = https://github.com/OpenZeppelin/openzeppelin-solidity.git
+[submodule "quazip"]
+	path = quazip
+	url = https://github.com/stachenov/quazip.git

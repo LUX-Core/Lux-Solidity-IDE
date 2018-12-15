@@ -15,5 +15,8 @@
         <file>imgs/warning.png</file>
         <file>imgs/Check.png</file>
         <file>imgs/download.png</file>
+        <file>imgs/newFile.png</file>
+        <file>imgs/openFile.png</file>
+        <file>imgs/saveFile.png</file>
     </qresource>
 </RCC>

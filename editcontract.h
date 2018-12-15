@@ -64,6 +64,7 @@ private slots:
     void slotErrWarningClicked(QListWidgetItem *item);
     void slotOptimizationStateChanged(int state);
     void slotChooseNewCompiler(int index);
+    void slotOpenFile();
 };
 
 #endif // CREATECONTRACT_H

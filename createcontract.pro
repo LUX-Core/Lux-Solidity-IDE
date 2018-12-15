@@ -78,6 +78,15 @@ DEPENDPATH += /media/alex/7a15ebc8-686e-4d37-aa51-198577f0f0dd/home/alex/Project
 install.path = $$OUT_PWD/SolCompilers
 install.files += SolCompilers/*
 INSTALLS +=install
+
+contracts.path = $$OUT_PWD/SolCompilers/contracts
+contracts.files += openzeppelin-solidity/contracts/*
+INSTALLS +=contracts
+
+LIBS += -L$$PWD/depends/lib/ -lquazip
+
+INCLUDEPATH += $$PWD/depends/include
+DEPENDPATH += $$PWD/depends/include
 }
 
 win32{
@@ -90,6 +99,10 @@ INSTALLS +=depends
 install.path = $$OUT_PWD/release/SolCompilers
 install.files += SolCompilers/*
 INSTALLS +=install
+
+contracts.path = $$OUT_PWD/release/SolCompilers/contracts
+contracts.files += openzeppelin-solidity/contracts/*
+INSTALLS +=contracts
 }
 
 CONFIG(debug, debug|release){
@@ -100,6 +113,10 @@ INSTALLS +=depends
 install.path = $$OUT_PWD/debug/SolCompilers
 install.files += SolCompilers/*
 INSTALLS +=install
+
+contracts.path = $$OUT_PWD/debug/SolCompilers/contracts
+contracts.files += openzeppelin-solidity/contracts/*
+INSTALLS +=contracts
 }
 
 }

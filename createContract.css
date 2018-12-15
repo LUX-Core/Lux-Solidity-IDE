@@ -5,6 +5,22 @@ QFrame#csTypeWidget
     background-color: #ededed;
 }
 
+QWidget#EditContract  .QLabel#labelFileName
+{
+    border: 1px solid black;
+    border-radius: 10px;
+    color: brown;
+    background-color: cyan;
+    min-height:25;
+    max-height:25;
+}
+
+QWidget#EditContract  .QFrame#toolsFrame
+{
+    min-height:40;
+    max-height:40;
+}
+
 QWidget#EditContract  .QComboBox#comboBoxCompilerVersion
 {
     qproperty-iconSize: 12px;

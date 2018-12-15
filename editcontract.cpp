@@ -19,6 +19,7 @@
 #include <QFileDialog>
 #include <QLabel>
 #include <QFontMetrics>
+#include <quazip/JlCompress.h>
 
 #include "editcontract.h"
 #include "ui_editcontract.h"
@@ -52,6 +53,13 @@ EditContract::EditContract(QWidget *parent) :
                 ui->codeEdit, &CodeEditor::undo);
         connect(ui->pushButtonRedo, &QPushButton::clicked,
                 ui->codeEdit, &CodeEditor::redo);
+
+        QShortcut * shortcutOpen = new QShortcut(QKeySequence(tr("Ctrl+O")),
+                                             this);
+        connect(shortcutOpen, &QShortcut::activated,
+                this, &EditContract::slotOpenFile);
+        connect(ui->pushButtonOpenFile, &QPushButton::clicked,
+                this, &EditContract::slotOpenFile);
 
 #ifdef __APPLE__
         ui->pushButtonSearch->setToolTip("Search (Cmd+F)");
@@ -131,6 +139,26 @@ EditContract::EditContract(QWidget *parent) :
 
     connect(ui->pushButtonAddCompiler, &QPushButton::clicked,
             this, &EditContract::slotAddSolcManually);
+}
+
+void EditContract::slotOpenFile()
+{
+    QString openFile = QFileDialog::getOpenFileName(this, tr("Open *.sol file"),
+                                                    QCoreApplication::applicationDirPath(), "*.sol");
+
+    if(!openFile.isEmpty())
+    {
+        QFile file(openFile);
+        if(!file.open(QIODevice::ReadOnly))
+        {
+            QMessageBox::critical(this, tr("Open *.sol file"),
+                                  tr("Can not open file - ") + openFile);
+            return;
+        }
+        QString data = file.readAll();
+        ui->codeEdit->setPlainText(data);
+        ui->labelFileName->setText(QFileInfo(openFile).fileName());
+    }
 }
 
 //get download links of solc
@@ -436,8 +464,8 @@ void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStat
     ui->comboBoxCompilerVersion->setEnabled(true);
     if(QProcess::CrashExit == exitStatus)
     {
-        QMessageBox::critical(this, "Smart contract Build",
-                              "Crash code - " + QString::number(exitCode));
+        QMessageBox::critical(this, tr("Smart contract Build"),
+                              tr("Crash code - ") + QString::number(exitCode));
         return;
     }
     //fill in comboBoxChooseDeploy
@@ -662,7 +690,8 @@ void EditContract::slotDownSolcFinished()
     {
         file_compiler.write(dataReply);
         file_compiler.close();
-        QProcess proc;
+        auto list = JlCompress::extractDir(&file_compiler, versionsDir.absoluteFilePath(version + "/output"));
+        /*QProcess proc;
         proc.setWorkingDirectory(versionsDir.absoluteFilePath(version));
 #ifdef __linux__
         if(bUbuntu)
@@ -673,8 +702,10 @@ void EditContract::slotDownSolcFinished()
 #ifdef _WIN32
         proc.start("unzip.exe", QStringList() << "solc.zip" << "-d" << "output");
 #endif
-        proc.waitForFinished();
-        if(QProcess::NormalExit == proc.exitStatus())
+        proc.waitForFinished();*/
+
+        //if(QProcess::NormalExit == proc.exitStatus())
+        if(!list.isEmpty())
         {
             QFile::remove(versionsDir.absoluteFilePath(version + "/solc.zip"));
             QDir output(versionsDir.absoluteFilePath(version + "/output"));
