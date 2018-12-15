@@ -1,5 +1,9 @@
 SolCompilers
 SolCompilers/*
+depends/lib
+depends/lib/*
+depends/include
+depends/include/*
 windows-dependecies
 windows-dependecies/*
 createcontract.pro.user
