@@ -35,7 +35,8 @@ SOURCES += \
     find/searchresulttreeitemdelegate.cpp \
     find/treewidgetfindresults.cpp \
     searchwgt.cpp \
-    editcontract.cpp
+    editcontract.cpp \
+    allopenfilesmodel.cpp
 
 HEADERS += \
     cstypewidget.h \
@@ -51,7 +52,8 @@ HEADERS += \
     find/treewidgetfindresults.h \
     searchwgt.h \
     editcontract.h \
-    guiconstants.h
+    guiconstants.h \
+    allopenfilesmodel.h
 
 FORMS += \
     cstypewidget.ui \

@@ -5,15 +5,63 @@ QFrame#csTypeWidget
     background-color: #ededed;
 }
 
+QWidget#EditContract  .QTreeWidget#treeWidgetCurrentProject
+{
+    border: 1px solid black;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+QWidget#EditContract  .QListView#listViewAllOpenFiles
+{
+    border: 1px solid black;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+QWidget#EditContract .QFrame
+{
+    border: 1px solid black;
+    border-radius: 10px;
+}
+
+QWidget#EditContract .CodeEditor#codeEdit{
+    border: 1px solid black;
+    border-radius: 10px;
+    padding: 5px;
+}
+
 QWidget#EditContract  .QLabel#labelFileName
 {
     border: 1px solid black;
     border-radius: 10px;
-    color: brown;
-    background-color: cyan;
+    color: #191970;
+    /*background-color: #98AFC7;*/
+    background-color: white;
     min-height:25;
     max-height:25;
 }
+
+QWidget#EditContract  .QLabel#labelCurrentProjectTytle
+{
+    border: 1px solid black;
+    border-radius: 10px;
+    color: #008080;
+    background-color: #C2DFFF;
+    min-height:25;
+    max-height:25;
+}
+
+QWidget#EditContract  .QLabel#labelAllOpenFilesTytle
+{
+    border: 1px solid black;
+    border-radius: 10px;
+    color: #008080;
+    background-color: #C2DFFF;
+    min-height:25;
+    max-height:25;
+}
+
 
 QWidget#EditContract  .QFrame#toolsFrame
 {
@@ -75,10 +123,6 @@ QLabel#labelTytleCsAllTypes
     font-size: 17px
 }
 
-QWidget#EditContract .QFrame{
-    border: 2px solid grey;
-    border-radius: 10px;
-}
 QWidget#EditContract .QFrame#toolsFrame .QPushButton
 {
     background-color: transparent;

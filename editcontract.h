@@ -8,11 +8,14 @@
 #include <QStringList>
 #include <QNetworkReply>
 #include <QSettings>
+#include <QFileInfo>
+
 #include "searchwgt.h"
 
 class QTemporaryDir;
 class QListWidgetItem;
 class QNetworkAccessManager;
+class QSortFilterProxyModel;
 
 namespace Ui {
 class EditContract;
@@ -21,12 +24,13 @@ class EditContract;
 class EditContract : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit EditContract(QWidget *parent = 0);
     ~EditContract();
+
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     Ui::EditContract *ui;
 #ifdef __linux__
@@ -35,6 +39,7 @@ private:
     QPointer<SearchWgt> search_Wgt;
     QPointer<QProcess> process_build;
     QPointer<QProcess> process_linux_distrib;
+    QPointer<QSortFilterProxyModel> allFilesModel;
     QTemporaryDir * tmpDir;
     QNetworkAccessManager * nam;
     QSettings settings;
@@ -48,6 +53,9 @@ private:
     QMap<QString, QString> pathsSolc; //<version, path>
     void customizeComboBoxCompiler(int index, bool bDownload);
     void startBuild();
+    void openEditFile(const QFileInfo &  info, bool bTmp);
+    void fillInImports();
+
 private slots:
     void slotAddSolcManually();
     void slotDownSolcFinished();
@@ -65,6 +73,7 @@ private slots:
     void slotOptimizationStateChanged(int state);
     void slotChooseNewCompiler(int index);
     void slotOpenFile();
+    void slotSolcCodeChanged();
 };
 
 #endif // CREATECONTRACT_H

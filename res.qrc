@@ -18,5 +18,7 @@
         <file>imgs/newFile.png</file>
         <file>imgs/openFile.png</file>
         <file>imgs/saveFile.png</file>
+        <file>imgs/saveAllFiles.png</file>
+        <file>imgs/saveFileAs.png</file>
     </qresource>
 </RCC>

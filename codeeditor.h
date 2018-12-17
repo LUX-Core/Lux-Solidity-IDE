@@ -93,6 +93,7 @@ public:
     void calcLineNumberAreaWidth();
     void setErr_Warnings(const QMap<int, ErrWarningBuildData> & list);
     ErrWarningBuildData err_warnToBlockNumber(int nBlockNumber);
+    QStringList parseImports();
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void keyPressEvent(QKeyEvent *event);

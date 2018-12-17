@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>672</width>
-    <height>564</height>
+    <width>723</width>
+    <height>586</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -17,12 +17,12 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Lux Solidity IDE</string>
   </property>
   <property name="styleSheet">
    <string notr="true"/>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
     <widget class="QFrame" name="toolsFrame">
      <property name="frameShape">
@@ -91,17 +91,6 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButtonNewFile">
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="res.qrc">
-          <normaloff>:/imgs/newFile.png</normaloff>:/imgs/newFile.png</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="pushButtonSaveFile">
         <property name="text">
          <string/>
@@ -109,6 +98,28 @@
         <property name="icon">
          <iconset resource="res.qrc">
           <normaloff>:/imgs/saveFile.png</normaloff>:/imgs/saveFile.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButtonSaveFileAs">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/imgs/saveFileAs.png</normaloff>:/imgs/saveFileAs.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButtonSaveAllFiles">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/imgs/saveAllFiles.png</normaloff>:/imgs/saveAllFiles.png</iconset>
         </property>
        </widget>
       </item>
@@ -124,6 +135,17 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="pushButtonNewFile">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/imgs/newFile.png</normaloff>:/imgs/newFile.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="pushButtonWizard">
         <property name="text">
          <string/>
@@ -131,13 +153,6 @@
         <property name="icon">
          <iconset resource="res.qrc">
           <normaloff>:/imgs/wizard.png</normaloff>:/imgs/wizard.png</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButtonExamples">
-        <property name="text">
-         <string/>
         </property>
        </widget>
       </item>
@@ -158,11 +173,93 @@
     </widget>
    </item>
    <item>
-    <widget class="QSplitter" name="splitter_2">
+    <widget class="QSplitter" name="splitterEditCode">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <widget class="QWidget" name="">
+     <widget class="QSplitter" name="splitter_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="QWidget" name="">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QLabel" name="labelCurrentProjectTytle">
+          <property name="text">
+           <string>Active Project</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeWidget" name="treeWidgetCurrentProject">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
+          <attribute name="headerVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="headerCascadingSectionResizes">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="headerDefaultSectionSize">
+           <number>100</number>
+          </attribute>
+          <attribute name="headerStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string/>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="">
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QLabel" name="labelAllOpenFilesTytle">
+          <property name="text">
+           <string>Open Documents</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QListView" name="listViewAllOpenFiles">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
         <widget class="QSplitter" name="splitter">
@@ -176,6 +273,18 @@
       </layout>
      </widget>
      <widget class="QFrame" name="frameBuild">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>16777215</height>
+       </size>
+      </property>
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>

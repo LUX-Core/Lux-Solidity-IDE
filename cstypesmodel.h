@@ -22,6 +22,7 @@ struct CsTypesItem
     QString strDescription;
 };
 
+
 class CsTypesModel : public QAbstractListModel
 {
     Q_OBJECT

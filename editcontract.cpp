@@ -20,7 +20,10 @@
 #include <QLabel>
 #include <QFontMetrics>
 #include <quazip/JlCompress.h>
+#include <QCoreApplication>
+#include <QSortFilterProxyModel>
 
+#include "allopenfilesmodel.h"
 #include "editcontract.h"
 #include "ui_editcontract.h"
 
@@ -31,6 +34,13 @@
 #define defLocalSolcFile "local"
 #define defPathCompiler "path"
 #define defVersionCompiler "version"
+
+//default contract name
+#define defContractName "tmp.sol"
+
+
+//default projects path 
+#define defProjectsPath QCoreApplication::applicationDirPath() + "/Contracts"
 
 EditContract::EditContract(QWidget *parent) :
     QWidget(parent),
@@ -129,16 +139,111 @@ EditContract::EditContract(QWidget *parent) :
         view->setSpacing(5);
     }
 
-//    connect(ui->listWidgetErrWarnings, &QListWidget::itemClicked,
-//            this, &EditContract::slotErrWarningClicked);
+    //allOpenFiles widget
+    {
+        allFilesModel = new QSortFilterProxyModel(ui->listViewAllOpenFiles);
+        auto* sourceModel = new AllOpenFilesModel(ui->listViewAllOpenFiles);
+        allFilesModel->setSourceModel(sourceModel);
+        allFilesModel->sort(0, Qt::AscendingOrder);
+        ui->listViewAllOpenFiles->setModel(allFilesModel);
+    }
+
+    //CurrentProject widget
+    {
+        ui->treeWidgetCurrentProject->setColumnCount(1);
+
+    }
+
+
     connect(ui->checkBoxOptimization, &QCheckBox::stateChanged,
             this, &EditContract::slotOptimizationStateChanged);
 
     ui->progressBarDownloadSolc->hide();
     ui->listWidgetErrWarnings->installEventFilter(this);
+    openEditFile(QFileInfo(defContractName), true);
+    connect(ui->codeEdit, &CodeEditor::textChanged,
+            this, &EditContract::slotSolcCodeChanged);
 
     connect(ui->pushButtonAddCompiler, &QPushButton::clicked,
             this, &EditContract::slotAddSolcManually);
+
+    //dont know width of splitter in this place - it is reason why
+    //we get width of code editor 999999 (Of course this is more than required)
+    ui->splitterEditCode->setSizes(QList<int>() <<200<<99999<<200);
+}
+
+void EditContract::fillInImports()
+{
+    const auto & listImports = ui->codeEdit->parseImports();
+    auto importsItem = ui->treeWidgetCurrentProject->topLevelItem(1);
+    if(nullptr == importsItem)
+    {
+        importsItem = new QTreeWidgetItem(ui->treeWidgetCurrentProject,
+                                          QStringList() << "Imports");
+        ui->treeWidgetCurrentProject->insertTopLevelItem(1, importsItem);
+    }
+    if(listImports.isEmpty())
+    {
+        ui->treeWidgetCurrentProject->takeTopLevelItem(1);
+        delete importsItem;
+        return;
+    }
+    foreach(auto childItem, importsItem->takeChildren())
+        delete childItem;
+
+    int iCurRow = ui->listViewAllOpenFiles->currentIndex().row();
+    auto index = allFilesModel->index(iCurRow,0);
+    auto dataExecFile = qvariant_cast<EditFileData>(allFilesModel->data(index, AllOpenFilesModel::AllDataRole));
+    bool bTmp = dataExecFile.bTmp;
+    QString absolutePath = dataExecFile.fileInfo.absolutePath();
+    //add new
+    if(!bTmp)
+    {
+        foreach(auto fileName, listImports)
+        {
+            QDir execDir(absolutePath);
+            QString abs_path = execDir.cleanPath(execDir.absoluteFilePath(fileName));
+            QFileInfo info(abs_path);
+            QTreeWidgetItem * item = new QTreeWidgetItem(importsItem,
+                                                         QStringList() <<info.fileName());
+            item->setToolTip(0, abs_path);
+            importsItem->addChild(item);
+        }
+    }
+}
+
+
+void EditContract::openEditFile(const QFileInfo & info, bool bTmp)
+{
+    allFilesModel->insertRow(0);
+    allFilesModel->setData(allFilesModel->index(0,0),
+                           QVariant::fromValue(EditFileData(info, bTmp)),
+                           AllOpenFilesModel::AllDataRole);
+
+    auto sourceModel = qobject_cast<AllOpenFilesModel *>(allFilesModel->sourceModel());
+    auto index = allFilesModel->mapFromSource(sourceModel->index(0));
+    ui->listViewAllOpenFiles->setCurrentIndex(index);
+    ui->labelFileName->setText(allFilesModel->data(index).toString());
+    ui->labelFileName->setToolTip(allFilesModel->data(index, Qt::ToolTipRole).toString());
+
+    ui->treeWidgetCurrentProject->clear();
+    //main *.sol
+    {
+        QTreeWidgetItem * topItem = new QTreeWidgetItem(ui->treeWidgetCurrentProject,
+                                                        QStringList() << info.fileName());
+        topItem->setToolTip(0, allFilesModel->data(index, Qt::ToolTipRole).toString());
+        ui->treeWidgetCurrentProject->insertTopLevelItem(0, topItem);
+    }
+    //imports
+    {
+        fillInImports();
+    }
+}
+
+void EditContract::slotSolcCodeChanged()
+{
+    auto sourceModel = qobject_cast<AllOpenFilesModel *>(allFilesModel->sourceModel());
+    sourceModel->setEditFlag(ui->listViewAllOpenFiles->currentIndex().row(), true);
 }
 
 void EditContract::slotOpenFile()
@@ -156,8 +261,10 @@ void EditContract::slotOpenFile()
             return;
         }
         QString data = file.readAll();
+        ui->codeEdit->blockSignals(true);
         ui->codeEdit->setPlainText(data);
-        ui->labelFileName->setText(QFileInfo(openFile).fileName());
+        ui->codeEdit->blockSignals(false);
+        openEditFile(QFileInfo(openFile), false);
     }
 }
 
@@ -691,7 +798,9 @@ void EditContract::slotDownSolcFinished()
         file_compiler.write(dataReply);
         file_compiler.close();
         auto list = JlCompress::extractDir(&file_compiler, versionsDir.absoluteFilePath(version + "/output"));
-        /*QProcess proc;
+//variant with sudo apt install libssl-dev unzip
+#if 0
+        QProcess proc;
         proc.setWorkingDirectory(versionsDir.absoluteFilePath(version));
 #ifdef __linux__
         if(bUbuntu)
@@ -704,7 +813,8 @@ void EditContract::slotDownSolcFinished()
 #endif
         proc.waitForFinished();*/
 
-        //if(QProcess::NormalExit == proc.exitStatus())
+        if(QProcess::NormalExit == proc.exitStatus())
+#endif
         if(!list.isEmpty())
         {
             QFile::remove(versionsDir.absoluteFilePath(version + "/solc.zip"));
