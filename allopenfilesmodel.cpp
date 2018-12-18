@@ -27,21 +27,21 @@ int AllOpenFilesModel::rowCount(const QModelIndex &parent) const
 
 QVariant AllOpenFilesModel::data(const QModelIndex &index, int role) const
 {
-    if(role == Qt::DisplayRole)
+    if(Qt::DisplayRole == role)
     {
         QString displayData = items[index.row()].fileInfo.fileName();
         if(items[index.row()].bEdit || items[index.row()].bTmp)
             displayData += "*";
         return displayData;
     }
-    else if(role == Qt::ToolTipRole)
+    else if(Qt::ToolTipRole == role)
     {
         if(!items[index.row()].bTmp)
             return items[index.row()].fileInfo.absoluteFilePath();
         else
             return defTmpFileToolTip;
     }
-    if(role == AllDataRole)
+    else if(AllDataRole == role)
     {
         return QVariant::fromValue(items[index.row()]);
     }
@@ -79,10 +79,7 @@ bool AllOpenFilesModel::setData(const QModelIndex &index, const QVariant &value,
 
     if(role == AllDataRole)
     {
-        const auto & newData = qvariant_cast<EditFileData>(value);
-        int iFindRow = findFile(newData.fileInfo.absoluteFilePath());
-        if( iFindRow < 0 || iFindRow == index.row())
-            items[index.row()] = newData;
+        items[index.row()] = qvariant_cast<EditFileData>(value);
     }
     else
         return QAbstractListModel::setData(index,value,role);

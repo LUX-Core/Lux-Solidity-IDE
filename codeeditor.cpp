@@ -78,7 +78,7 @@ static bool isRightBrackets(QChar symbol)
 
 CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
 {
-    blockSignals(true);
+    //blockSignals(true);
     lineNumberArea = new LineNumberArea(this);
     highlighter = new Highlighter(document());
 
@@ -87,28 +87,7 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     connect(this, SIGNAL(cursorPositionChanged()),
              this, SLOT(matchBrackets()));         
     init();
-    blockSignals(false);
-}
-
-
-QStringList CodeEditor::parseImports()
-{
-    QStringList res;
-    QTextBlock block = document()->firstBlock();
-    QRegExp rx ("\\b(import)\\b\\s+\".*\"");
-    while(block.isValid())
-    {
-        QString text = block.text();
-        int pos = 0;
-        while ((pos = rx.indexIn(text, pos)) != -1)
-        {
-            res << rx.cap(0).remove("import")
-                   .remove(' ').remove("\"");
-            pos += rx.matchedLength();
-        }
-        block = block.next();
-    }
-    return res;
+    //blockSignals(false);
 }
 
 ErrWarningBuildData CodeEditor::err_warnToBlockNumber(int nBlockNumber)
