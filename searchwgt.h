@@ -41,6 +41,8 @@ private slots:
     void slotFindNext();
     void slotFindPrev();
     void slotFindAllCurrent();
+    void slotFindAllAll();
+    void slotFindAllCurProject();
 
     //clear
     void slotClearMarks();
@@ -48,6 +50,8 @@ private slots:
     //replace
     void slotReplace();
     void slotReplaceAllCurrent();
+    void slotReplaceAllCurProject();
+    void slotReplaceAllAll();
 signals:
 
     //mark
@@ -56,6 +60,7 @@ signals:
     //find
     void sigFindAllCurrentFile();
     void sigFindAllAllFiles();
+    void sigFindAllCurProject();
     void sigFindNext();
     void sigFindPrev();
 
@@ -63,6 +68,7 @@ signals:
     void sigReplace(QString strReplace);
     void sigReplaceAllCurrent(QString strReplace);
     void sigReplaceAllAll(QString strReplace);
+    void sigReplaceAllCurProject(QString strReplace);
 };
 
 #endif // SEARCHWGT_H

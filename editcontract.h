@@ -55,7 +55,6 @@ private:
     void getDownloadLinksSolc();
     QMap<QString, QString> downloadLinksSolc; //<version, downloadLink>
     QMap<QString, QString> pathsSolc; //<version, path>
-    QMap<QString, QString> saveDataFiles; //<absolute file path, current data of file(maybe not saved)>
     void customizeComboBoxCompiler(int index, bool bDownload);
     void startBuild();
     void openEditFile(const QFileInfo &  info, bool bTmp, bool bActiveSol);
@@ -66,6 +65,7 @@ private:
     //index in proxy model
     QModelIndex indexAllOpenFiles(QString absFilePath);
     bool bNewTextOpenFile {false};
+    void unSaveChangesEditFile(bool bUnSave);
 private slots:
     void slotListAllOpenClickFile(const QModelIndex &index);
     void slotTreeCurProjClickFile(QTreeWidgetItem *item);
@@ -85,8 +85,11 @@ private slots:
     void slotOptimizationStateChanged(int state);
     void slotChooseNewCompiler(int index);
     void slotClickOpenFile();
-    void slotSolcCodeChanged();
-    void slotClickSaveFile();
+    void slotSolcCodeChanged(int position, int charsRemoved, int charsAdded);
+    void slotSaveAllFilesClick();
+    void slotSaveFileClick();
+    void slotSaveFileAsClick();
+    void slotFindResultChoosed(QString nameFile);
 };
 
 #endif // CREATECONTRACT_H

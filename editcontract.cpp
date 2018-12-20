@@ -44,7 +44,7 @@
 #define defContractName "tmp.sol"
 
 
-//default projects path 
+//default projects path
 #define defProjectsPath QCoreApplication::applicationDirPath() + "/Contracts"
 
 
@@ -58,7 +58,7 @@ EditContract::EditContract(QWidget *parent) :
     ui->setupUi(this);
     tmpDir = new QTemporaryDir();
     QDir(tmpDir->path()).mkpath("output");
-    
+
     //toolsFrame
     {
         //search
@@ -91,23 +91,44 @@ EditContract::EditContract(QWidget *parent) :
             QShortcut * shortcut = new QShortcut(QKeySequence(tr("Ctrl+S")),
                                                  this);
             connect(shortcut, &QShortcut::activated,
-                    this, &EditContract::slotClickSaveFile);
+                    this, &EditContract::slotSaveFileClick);
             connect(ui->pushButtonSaveFile, &QPushButton::clicked,
-                    this, &EditContract::slotClickSaveFile);
+                    this, &EditContract::slotSaveFileClick);
             ui->pushButtonSaveFile->setEnabled(false);
         }
 
+        //saveAllFiles
+        {
+            QShortcut * shortcut = new QShortcut(QKeySequence(tr("Ctrl+Shift+S")),
+                                                 this);
+            connect(shortcut, &QShortcut::activated,
+                    this, &EditContract::slotSaveAllFilesClick);
+            connect(ui->pushButtonSaveAllFiles, &QPushButton::clicked,
+                    this, &EditContract::slotSaveAllFilesClick);
+            ui->pushButtonSaveAllFiles->setEnabled(false);
+        }
+
+        //saveAsFile
+        connect(ui->pushButtonSaveFileAs, &QPushButton::clicked,
+                this, &EditContract::slotSaveFileAsClick);
+
+        //set tooltips
 #ifdef __APPLE__
         ui->pushButtonSearch->setToolTip("Search (Cmd+F)");
         ui->pushButtonRedo->setToolTip("Redo (Cmd+Y)");
         ui->pushButtonUndo->setToolTip("Undo (Cmd+Z)");
         ui->pushButtonOpenFile->setToolTip("Undo (Cmd+O)");
+        ui->pushButtonSaveFile->setToolTip("Undo (Cmd+S)");
+        ui->pushButtonSaveAllFiles->setToolTip("Save All (Cmd+Shift+S)");
 #else
         ui->pushButtonSearch->setToolTip("Search (Ctrl+F)");
         ui->pushButtonRedo->setToolTip("Redo (Ctrl+Y)");
         ui->pushButtonUndo->setToolTip("Undo (Ctrl+Z)");
         ui->pushButtonOpenFile->setToolTip("Undo (Ctrl+O)");
+        ui->pushButtonSaveFile->setToolTip("Save (Ctrl+S)");
+        ui->pushButtonSaveAllFiles->setToolTip("Save All (Ctrl+Shift+S)");
 #endif
+        ui->pushButtonSaveFileAs->setToolTip("Save As...");
     }
 
     //buildFrame
@@ -119,9 +140,9 @@ EditContract::EditContract(QWidget *parent) :
         connect(ui->pushButtonBuild, &QPushButton::clicked,
                 this, &EditContract::slotBuildClicked);
 #ifdef __APPLE__
-        ui->pushButtonBuild->setToolTip("Build (Cmd+B)");
+        ui->pushButtonBuild->setToolTip(tr("Build (Cmd+B)"));
 #else
-        ui->pushButtonBuild->setToolTip("Build (Ctrl+B)");
+        ui->pushButtonBuild->setToolTip(tr("Build (Ctrl+B)"));
 #endif
         process_build = new QProcess(this);
         connect(process_build.data(), static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
@@ -131,7 +152,7 @@ EditContract::EditContract(QWidget *parent) :
                 this, &EditContract::slotBuildProcError);
     }
 
-    //find widget   
+    //find widget
     {
         ui->wgtFindResults->hide();
         connect(ui->wgtFindResults, &FindWidget::sigNeedHiding,
@@ -140,6 +161,8 @@ EditContract::EditContract(QWidget *parent) :
                 ui->wgtFindResults, &FindWidget::slotReadyFindResults);
         connect(ui->wgtFindResults, &FindWidget::sigFindResultChoosed,
                 ui->codeEdit, &CodeEditor::slotCurrentFindResultChanged);
+        connect(ui->wgtFindResults, &FindWidget::sigFindResultChoosed,
+                this, &EditContract::slotFindResultChoosed);
     }
 
     nam = new QNetworkAccessManager(this);
@@ -193,7 +216,7 @@ EditContract::EditContract(QWidget *parent) :
     ui->progressBarDownloadSolc->hide();
     ui->listWidgetErrWarnings->installEventFilter(this);
     openEditFile(QFileInfo(defContractName), true, true);
-    connect(ui->codeEdit, &CodeEditor::textChanged,
+    connect(ui->codeEdit, &CodeEditor::contentsChange,
             this, &EditContract::slotSolcCodeChanged);
 
     connect(ui->pushButtonAddCompiler, &QPushButton::clicked,
@@ -204,7 +227,96 @@ EditContract::EditContract(QWidget *parent) :
     ui->splitterEditCode->setSizes(QList<int>() <<200<<99999<<200);
 }
 
-void EditContract::slotClickSaveFile()
+void EditContract::slotFindResultChoosed(QString nameFile)
+{
+    QFileInfo info(nameFile);
+    openEditFile(info, !info.exists(), false);
+}
+
+void EditContract::slotSaveAllFilesClick()
+{
+    auto list = allFilesModel->match(allFilesModel->index(0,0),
+                                     AllOpenFilesModel::EditingDataRole,
+                                     true, -1);
+    //save all standard files
+    foreach(auto index, list)
+    {
+        if(allFilesModel->data(index, AllOpenFilesModel::TmpDataRole).toBool())
+            continue;
+        QString absPathFile = allFilesModel->data(index, AllOpenFilesModel::AbsFilePathRole).toString();
+        QFile file(absPathFile);
+        if(!file.open(QIODevice::WriteOnly))
+        {
+            QMessageBox::critical(this, tr("Save all file"),
+                                  tr("Can not open file - ") + absPathFile);
+            return;
+        }
+        file.write(ui->codeEdit->utf8DataOfFile(absPathFile));
+        file.close();
+        allFilesModel->setData(index, false, AllOpenFilesModel::EditingDataRole);
+    }
+    //ask user to save tmp files
+    foreach(auto index, list)
+    {
+        if(!allFilesModel->data(index, AllOpenFilesModel::TmpDataRole).toBool())
+            continue;
+        QString absPathFile = allFilesModel->data(index, AllOpenFilesModel::AbsFilePathRole).toString();
+        QFileInfo info(absPathFile);
+        openEditFile(info,true, false);
+        auto but = QMessageBox::question(this, tr("Save tmp file"),
+                                         info.fileName() + tr(" is tmp file. Do you want save it in disk?"),
+                                         QMessageBox::Yes | QMessageBox::No | QMessageBox::NoToAll,
+                                         QMessageBox::No);
+        if(QMessageBox::Yes == but)
+            slotSaveFileAsClick();
+        if(QMessageBox::NoToAll == but)
+            break;
+    }
+
+    ui->pushButtonSaveFile->setEnabled(false);
+    ui->pushButtonSaveAllFiles->setEnabled(false);
+    ui->labelFileName->setText(allFilesModel->data(ui->listViewAllOpenFiles->currentIndex()).toString());
+
+}
+
+void EditContract::slotSaveFileAsClick()
+{
+    QString fileAbsName = QFileDialog::getSaveFileName(this, tr("Save file as"),
+                                                    QCoreApplication::applicationDirPath(),
+                                                    "Solidity files (*.sol);;All files (*)");
+    if(fileAbsName.isEmpty())
+        return;
+    //create file and write data to it
+    QFile file(fileAbsName);
+    if(!file.open(QIODevice::WriteOnly))
+    {
+        QMessageBox::critical(this, tr("Save file as"),
+                              tr("Can not create file - ") + fileAbsName);
+        return;
+    }
+    file.write(ui->codeEdit->utf8DataOfFile(fileAbsName));
+    file.close();
+
+    bool bRemoveTmp = allFilesModel->data(ui->listViewAllOpenFiles->currentIndex(),
+                                          AllOpenFilesModel::TmpDataRole).toBool();
+
+    QString prevName = allFilesModel->data(ui->listViewAllOpenFiles->currentIndex(),
+                                           AllOpenFilesModel::AbsFilePathRole).toString();
+    if(bRemoveTmp)
+        allFilesModel->removeRow(ui->listViewAllOpenFiles->currentIndex().row());
+
+    auto fileInfo = QFileInfo(fileAbsName);
+    openEditFile(fileInfo, false,
+                 prevName==activeSolFileData().fileInfo.absoluteFilePath());
+    unSaveChangesEditFile(false);
+
+    //must be last action
+    //because we can not remove current QTextDocument in codeEdit
+    if(bRemoveTmp)
+        ui->codeEdit->removeDocument(prevName);
+}
+
+void EditContract::slotSaveFileClick()
 {
     QString abs_path = editingFileData().fileInfo.absoluteFilePath();
     QFile file(abs_path);
@@ -214,9 +326,26 @@ void EditContract::slotClickSaveFile()
                               tr("Can not open file - ") + abs_path);
         return;
     }
-    file.write(ui->codeEdit->toPlainText().toLatin1());
+    file.write(ui->codeEdit->toPlainText().toUtf8());
     file.close();
-    ui->pushButtonSaveFile->setEnabled(true);
+
+    unSaveChangesEditFile(false);
+}
+
+void EditContract::unSaveChangesEditFile(bool bUnSave)
+{
+    int curRow = ui->listViewAllOpenFiles->currentIndex().row();
+    const auto & index = allFilesModel->index(curRow,0);
+    allFilesModel->setData(index, bUnSave, AllOpenFilesModel::EditingDataRole);
+
+    ui->labelFileName->setText(allFilesModel->data(index).toString());
+
+    bool bTmp = allFilesModel->data(index, AllOpenFilesModel::TmpDataRole).toBool();
+    ui->pushButtonSaveFile->setEnabled(bUnSave && !bTmp);
+    auto list = allFilesModel->match(allFilesModel->index(0,0),
+                                     AllOpenFilesModel::EditingDataRole,
+                                     true);
+    ui->pushButtonSaveAllFiles->setEnabled(!list.isEmpty());
 }
 
 EditFileData EditContract::editingFileData()
@@ -257,38 +386,38 @@ void EditContract::slotListAllOpenClickFile(const QModelIndex & index)
 void EditContract::fillInImports(QString absFilePath)
 {
     const auto & listImports = parseImports(absFilePath);
-    auto importsItem = ui->treeWidgetCurrentProject->topLevelItem(1);
+    auto importsItem = ui->treeWidgetCurrentProject->topLevelItem(_UpdatesFolder);
+    if(listImports.isEmpty())
+    {
+        if(importsItem)
+        {
+            ui->treeWidgetCurrentProject->takeTopLevelItem(_UpdatesFolder);
+            delete importsItem;
+        }
+        return;
+    }
     if(nullptr == importsItem)
     {
         importsItem = new QTreeWidgetItem(ui->treeWidgetCurrentProject,
                                           QStringList() << "Imports");
         ui->treeWidgetCurrentProject->insertTopLevelItem(_UpdatesFolder, importsItem);
     }
-    if(listImports.isEmpty())
-    {
-        ui->treeWidgetCurrentProject->takeTopLevelItem(_UpdatesFolder);
-        delete importsItem;
-        return;
-    }
+
     foreach(auto childItem, importsItem->takeChildren())
         delete childItem;
 
-    const auto & dataActiveFile = editingFileData();
-    bool bTmp = dataActiveFile.bTmp;
     //add new
-    if(!bTmp)
+    foreach(auto fileName, listImports)
     {
-        foreach(auto fileName, listImports)
-        {
-            QFileInfo info(fileName);
-            QTreeWidgetItem * item = new QTreeWidgetItem(importsItem,
-                                                         QStringList() <<info.fileName());
-            item->setToolTip(0, fileName);
-            item->setData(0,defFileInfoRole,
-                             QVariant::fromValue(EditFileData(info, false)));
-            importsItem->addChild(item);
-        }
+        QFileInfo info(fileName);
+        QTreeWidgetItem * item = new QTreeWidgetItem(importsItem,
+                                                     QStringList() <<info.fileName());
+        item->setToolTip(0, fileName);
+        item->setData(0,defFileInfoRole,
+                         QVariant::fromValue(EditFileData(info, false)));
+        importsItem->addChild(item);
     }
+    ui->codeEdit->addCurrentProject(QStringList()<< absFilePath << listImports);
     ui->treeWidgetCurrentProject->model()->sort(0);
 }
 
@@ -327,9 +456,13 @@ QStringList EditContract::parseImports(QString absFilePath)
 //index in proxy model
 QModelIndex EditContract::indexAllOpenFiles(QString absFilePath)
 {
-    auto sourceModel = qobject_cast<AllOpenFilesModel *>(allFilesModel->sourceModel());
-    int iFindSource = sourceModel->findFile(absFilePath);
-    return allFilesModel->mapFromSource(sourceModel->index(iFindSource));
+    QModelIndex res;
+    auto list = allFilesModel->match(allFilesModel->index(0,0),
+                                     AllOpenFilesModel::AbsFilePathRole,
+                                     absFilePath);
+    if(!list.isEmpty())
+        res = list.first();
+    return res;
 }
 
 
@@ -337,9 +470,8 @@ void EditContract::openEditFile(const QFileInfo & info, bool bTmp,
                                 bool bActiveSol)
 {
     bNewTextOpenFile = true;
-
     if(false == bTmp &&
-       !saveDataFiles.contains(info.absoluteFilePath()))
+       !ui->codeEdit->containsFile(info.absoluteFilePath()))
     {
         QFile file(info.absoluteFilePath());
         if(!file.open(QIODevice::ReadOnly))
@@ -350,17 +482,11 @@ void EditContract::openEditFile(const QFileInfo & info, bool bTmp,
             return;
         }
         QString data = file.readAll();
-        //ui->codeEdit->blockSignals(true);
+        ui->codeEdit->setCurrentDocument(info.absoluteFilePath());
         ui->codeEdit->setPlainText(data);
-        //ui->codeEdit->blockSignals(false);
-        saveDataFiles[info.absoluteFilePath()] = data;
     }
     else
-    {
-        //ui->codeEdit->blockSignals(true);
-        ui->codeEdit->setPlainText(saveDataFiles[info.absoluteFilePath()]);
-        //ui->codeEdit->blockSignals(false);
-    }
+        ui->codeEdit->setCurrentDocument(info.absoluteFilePath());
 
     EditFileData activeSolData(info, bTmp);
     QModelIndex index = indexAllOpenFiles(info.absoluteFilePath());
@@ -394,59 +520,64 @@ void EditContract::openEditFile(const QFileInfo & info, bool bTmp,
     }
 
     //set current item in treeWidgetCurrentProject
-    for(int i_top=0;
-        i_top<ui->treeWidgetCurrentProject->topLevelItemCount();
-        i_top++)
     {
-        auto topItem = ui->treeWidgetCurrentProject->topLevelItem(i_top);
-        EditFileData fileData = qvariant_cast<EditFileData>(topItem->data(0, defFileInfoRole));
-        if(info.absoluteFilePath() == fileData.fileInfo.absoluteFilePath())
-        {
-            ui->treeWidgetCurrentProject->setCurrentItem(topItem);
-            break;
-        }
         bool bFind = false;
-        for(int i_child=0;
-            i_child<topItem->childCount();
-            i_child++)
+        for(int i_top=0;
+            i_top<ui->treeWidgetCurrentProject->topLevelItemCount();
+            i_top++)
         {
-            auto childItem = topItem->child(i_child);
-            EditFileData fileData = qvariant_cast<EditFileData>(childItem->data(0, defFileInfoRole));
+            auto topItem = ui->treeWidgetCurrentProject->topLevelItem(i_top);
+            EditFileData fileData = qvariant_cast<EditFileData>(topItem->data(0, defFileInfoRole));
             if(info.absoluteFilePath() == fileData.fileInfo.absoluteFilePath())
             {
-                ui->treeWidgetCurrentProject->setCurrentItem(childItem);
+                ui->treeWidgetCurrentProject->setCurrentItem(topItem);
                 bFind = true;
                 break;
             }
+            for(int i_child=0;
+                i_child<topItem->childCount();
+                i_child++)
+            {
+                auto childItem = topItem->child(i_child);
+                EditFileData fileData = qvariant_cast<EditFileData>(childItem->data(0, defFileInfoRole));
+                if(info.absoluteFilePath() == fileData.fileInfo.absoluteFilePath())
+                {
+                    ui->treeWidgetCurrentProject->setCurrentItem(childItem);
+                    bFind = true;
+                    break;
+
+                }
+
+            }
+            if(bFind)
+                break;
+
         }
-        if(bFind)
-            break;
+        if(!bFind)
+            ui->treeWidgetCurrentProject->setCurrentItem(nullptr);
     }
+
+    //saveButton enabled/disabled
+    bool bEditingFile = allFilesModel->data(index, AllOpenFilesModel::EditingDataRole).toBool();
+    bool bTmpFile= allFilesModel->data(index, AllOpenFilesModel::TmpDataRole).toBool();
+    ui->pushButtonSaveFile->setEnabled(bEditingFile && !bTmpFile);
+    bNewTextOpenFile = false;
 }
 
-void EditContract::slotSolcCodeChanged()
-{    
-    if(!bNewTextOpenFile)
+void EditContract::slotSolcCodeChanged(int position, int charsRemoved, int charsAdded)
+{
+    if(!bNewTextOpenFile &&
+      (charsRemoved>0 || charsAdded>0))
     {
-        auto sourceModel = qobject_cast<AllOpenFilesModel *>(allFilesModel->sourceModel());
-
-        int curRow = ui->listViewAllOpenFiles->currentIndex().row();
-        const auto & index = allFilesModel->index(curRow,0);
-        int sourceCurRow = allFilesModel->mapToSource(index).row();
-        sourceModel->setEditFlag(sourceCurRow, true);
-
-        saveDataFiles[editingFileData().fileInfo.absoluteFilePath()] = ui->codeEdit->toPlainText();
-        ui->labelFileName->setText(allFilesModel->data(index).toString());
-
-        ui->pushButtonSaveFile->setEnabled(true);
+        unSaveChangesEditFile(true);
     }
-    bNewTextOpenFile = false;
 }
 
 void EditContract::slotClickOpenFile()
 {
-    QString openFile = QFileDialog::getOpenFileName(this, tr("Open *.sol file"),
-                                                    QCoreApplication::applicationDirPath(), "*.sol");
+    QString openFile = QFileDialog::getOpenFileName(this, tr("Open file"),
+                                                    QCoreApplication::applicationDirPath(),
+                                                    "Solidity files (*.sol);;All files (*)");
 
     if(!openFile.isEmpty())
     {
@@ -483,10 +614,10 @@ void EditContract::slotAddSolcManually()
             QProcess proc;
             proc.start(newSolc, QStringList() << "--version");
             proc.waitForFinished(1000);
-            QRegExp reg_exp("\\d{1,2}[.]\\d{1,2}[.]\\d{1,2}");     
+            QRegExp reg_exp("\\d{1,2}[.]\\d{1,2}[.]\\d{1,2}");
             QString output = proc.readAllStandardOutput();
             int pos = reg_exp.indexIn(output);
-            if (pos != -1) 
+            if (pos != -1)
                 version = output.mid(pos).remove("\n").remove("\r");
         }
         if(version.isEmpty())
@@ -494,7 +625,7 @@ void EditContract::slotAddSolcManually()
             QMessageBox::critical(this, tr("Add Solc Compiler"), tr("It is not solc compiler!"));
             return;
         }
-        
+
         QString localSolcFileName = QCoreApplication::applicationDirPath() + "/" + strCompilePath + "/" + QString(defLocalSolcFile);
         QFile file(localSolcFileName);
         QJsonDocument documentOld;
@@ -506,9 +637,9 @@ void EditContract::slotAddSolcManually()
         QJsonArray array = documentOld.array();
         QJsonObject newObj;
         newObj[defPathCompiler] = newSolc;
-        newObj[defVersionCompiler] = version; 
+        newObj[defVersionCompiler] = version;
         array.append(newObj);
-        QJsonDocument documentNew(array);            
+        QJsonDocument documentNew(array);
         if(file.open(QIODevice::Append))
         {
             file.write(documentNew.toJson());
@@ -683,7 +814,7 @@ void EditContract::fillInCompilerVersions()
             customizeComboBoxCompiler(ui->comboBoxCompilerVersion->count() - 1, false);
         }
     }
-    
+
     QString localSolcFileName = QCoreApplication::applicationDirPath() + "/" + strCompilePath + "/" + QString(defLocalSolcFile);
     QFile file(localSolcFileName);
     QJsonDocument documentOld;
@@ -707,7 +838,7 @@ void EditContract::fillInCompilerVersions()
             customizeComboBoxCompiler(ui->comboBoxCompilerVersion->count() - 1, false);
         }
     }
-    
+
     QString savedVersion = settings.value(defSolcVersion).toString();
     if(ui->comboBoxCompilerVersion->findText(savedVersion))
         ui->comboBoxCompilerVersion->setCurrentText(savedVersion);
@@ -897,7 +1028,15 @@ void EditContract::slotSearchClicked()
             //find
             connect(search_Wgt.data(), &SearchWgt::sigFindAllCurrentFile,
                     ui->codeEdit, &CodeEditor::slotFindAllCurrentFile);
+            connect(search_Wgt.data(), &SearchWgt::sigFindAllAllFiles,
+                    ui->codeEdit, &CodeEditor::slotFindAllAllFiles);
+            connect(search_Wgt.data(), &SearchWgt::sigFindAllCurProject,
+                    ui->codeEdit, &CodeEditor::slotFindAllCurProject);
             connect(search_Wgt.data(), &SearchWgt::sigFindAllCurrentFile,
+                    this, [this](){ui->wgtFindResults->show();});
+            connect(search_Wgt.data(), &SearchWgt::sigFindAllAllFiles,
+                    this, [this](){ui->wgtFindResults->show();});
+            connect(search_Wgt.data(), &SearchWgt::sigFindAllCurProject,
                     this, [this](){ui->wgtFindResults->show();});
             connect(search_Wgt.data(), &SearchWgt::sigFindNext,
                     ui->codeEdit, &CodeEditor::slotFindNext);
@@ -909,6 +1048,10 @@ void EditContract::slotSearchClicked()
                     ui->codeEdit, &CodeEditor::slotReplace);
             connect(search_Wgt.data(), &SearchWgt::sigReplaceAllCurrent,
                     ui->codeEdit, &CodeEditor::slotReplaceAllCurrent);
+            connect(search_Wgt.data(), &SearchWgt::sigReplaceAllCurProject,
+                    ui->codeEdit, &CodeEditor::slotReplaceAllCurProject);
+            connect(search_Wgt.data(), &SearchWgt::sigReplaceAllAll,
+                    ui->codeEdit, &CodeEditor::slotReplaceAllAll);
         }
     }
     else

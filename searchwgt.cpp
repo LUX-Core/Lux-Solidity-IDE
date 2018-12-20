@@ -61,6 +61,10 @@ SearchWgt::SearchWgt(QWidget *parent) :
         //find
         connect(ui->pushButtonFindAllCurrent, &QPushButton::clicked,
                 this, &SearchWgt::slotFindAllCurrent);
+        connect(ui->pushButtonFindAllCurProject, &QPushButton::clicked,
+                this, &SearchWgt::sigFindAllCurProject);
+        connect(ui->pushButtonFindAllAll, &QPushButton::clicked,
+                this, &SearchWgt::slotFindAllAll);
         connect(ui->pushButtonFindNext, &QPushButton::clicked,
                 this, &SearchWgt::slotFindNext);
         connect(ui->pushButtonFindPrev, &QPushButton::clicked,
@@ -71,6 +75,10 @@ SearchWgt::SearchWgt(QWidget *parent) :
                 this, &SearchWgt::slotReplace);
         connect(ui->pushButtonReplaceAllCurrent, &QPushButton::clicked,
                 this, &SearchWgt::slotReplaceAllCurrent);
+        connect(ui->pushButtonReplaceAllAll, &QPushButton::clicked,
+                this, &SearchWgt::slotReplaceAllAll);
+        connect(ui->pushButtonReplaceAllCurProject, &QPushButton::clicked,
+                this, &SearchWgt::slotReplaceAllCurProject);
 
         //clear
         connect(ui->pushButtonClear, &QPushButton::clicked,
@@ -110,6 +118,22 @@ void SearchWgt::slotReplaceAllCurrent()
     emit sigReplaceAllCurrent(ui->comboBoxReplaceWith->currentText());
 }
 
+void SearchWgt::slotReplaceAllAll()
+{
+    if(ui->comboBoxReplaceWith->findText(ui->comboBoxFindWhat->currentText())<0)
+        ui->comboBoxReplaceWith
+           ->addItem(ui->comboBoxReplaceWith->currentText());
+    emit sigReplaceAllAll(ui->comboBoxReplaceWith->currentText());
+}
+
+void SearchWgt::slotReplaceAllCurProject()
+{
+    if(ui->comboBoxReplaceWith->findText(ui->comboBoxFindWhat->currentText())<0)
+        ui->comboBoxReplaceWith
+           ->addItem(ui->comboBoxReplaceWith->currentText());
+    emit sigReplaceAllCurProject(ui->comboBoxReplaceWith->currentText());
+}
+
 void SearchWgt::slotFindRadButClicked()
 {
     //hide all buttons
@@ -121,12 +145,15 @@ void SearchWgt::slotFindRadButClicked()
         }
     }
     ui->widgetReplaceWith->hide();
+    ui->groupBox->setTitle(tr("Find"));
     //show find
     {
         ui->pushButtonFindNext->show();
         ui->pushButtonFindPrev->show();
         ui->pushButtonClear->show();
+        ui->pushButtonFindAllAll->show();
         ui->pushButtonFindAllCurrent->show();
+        ui->pushButtonFindAllCurProject->show();
     }
 }
 
@@ -141,12 +168,15 @@ void SearchWgt::slotReplaceRadButClicked()
         }
     }
     ui->widgetReplaceWith->show();
+    ui->groupBox->setTitle(tr("Replace"));
     //show replace
     {
         ui->pushButtonFindNext->show();
         ui->pushButtonFindPrev->show();
         ui->pushButtonReplace->show();
+        ui->pushButtonReplaceAllAll->show();
         ui->pushButtonReplaceAllCurrent->show();
+        ui->pushButtonReplaceAllCurProject->show();
     }
 }
 
@@ -182,6 +212,36 @@ void SearchWgt::slotFindPrev()
         if(ui->comboBoxFindWhat->findText(ui->comboBoxFindWhat->currentText())<0)
             ui->comboBoxFindWhat->addItem(ui->comboBoxFindWhat->currentText());
         emit sigFindPrev();
+    }
+}
+
+void SearchWgt::slotFindAllCurProject()
+{
+    if(!ui->comboBoxFindWhat->currentText().isEmpty())
+    {
+        emit sigFindAllCurProject();
+        if(ui->comboBoxFindWhat->findText(ui->comboBoxFindWhat->currentText())<0)
+            ui->comboBoxFindWhat->addItem(ui->comboBoxFindWhat->currentText());
+    }
+    else
+    {
+        QMessageBox::critical(nullptr, "Search",
+                              "Please input text in \"Find what\" field");
+    }
+}
+
+void SearchWgt::slotFindAllAll()
+{
+    if(!ui->comboBoxFindWhat->currentText().isEmpty())
+    {
+        emit sigFindAllAllFiles();
+        if(ui->comboBoxFindWhat->findText(ui->comboBoxFindWhat->currentText())<0)
+            ui->comboBoxFindWhat->addItem(ui->comboBoxFindWhat->currentText());
+    }
+    else
+    {
+        QMessageBox::critical(nullptr, "Search",
+                              "Please input text in \"Find what\" field");
     }
 }
 

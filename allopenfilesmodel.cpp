@@ -9,16 +9,6 @@ AllOpenFilesModel::AllOpenFilesModel(QObject *parent):
 
 }
 
-bool AllOpenFilesModel::setEditFlag(int iRow,bool bOn)
-{
-    if(iRow >= items.size() || iRow < 0)
-        return false;
-
-    items[iRow].bEdit = bOn;
-    emit dataChanged(index(iRow), index(iRow), {Qt::DisplayRole});
-    return true;
-}
-
 int AllOpenFilesModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent)
@@ -45,6 +35,18 @@ QVariant AllOpenFilesModel::data(const QModelIndex &index, int role) const
     {
         return QVariant::fromValue(items[index.row()]);
     }
+    else if(EditingDataRole == role)
+    {
+        return items[index.row()].bEdit;
+    }
+    else if(TmpDataRole == role)
+    {
+        return items[index.row()].bTmp;
+    }
+    else if(AbsFilePathRole == role)
+    {
+        return items[index.row()].fileInfo.absoluteFilePath();
+    }
     else
         return QVariant();
 }
@@ -54,32 +56,22 @@ bool AllOpenFilesModel::setData(int iRow, const QVariant &value, int role)
     return setData(index(iRow), value, role);
 }
 
-//return row of file
-//return -1 if there is no such file
-int AllOpenFilesModel::findFile(QString fullPath)
-{
-    int res = -1;
-    for(int i=0; i<items.size(); i++)
-    {
-        auto item = items[i];
-        if(item.fileInfo.absoluteFilePath() == fullPath)
-        {
-            res = i;
-            break;
-        }
-    }
-
-    return res;
-}
-
 bool AllOpenFilesModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if(index.row() >= items.size() || index.row() < 0)
         return QAbstractListModel::setData(index,value,role);
 
-    if(role == AllDataRole)
+    if(AllDataRole == role)
     {
         items[index.row()] = qvariant_cast<EditFileData>(value);
+    }
+    else if(EditingDataRole == role)
+    {
+        items[index.row()].bEdit = value.toBool();
+    }
+    else if(AbsFilePathRole == role)
+    {
+        items[index.row()].fileInfo.setFile(value.toString());
     }
     else
         return QAbstractListModel::setData(index,value,role);

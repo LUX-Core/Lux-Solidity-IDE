@@ -75,13 +75,9 @@ struct USearchInfo
 class TextBlockUserData : public QTextBlockUserData
 {
 public:
-    TextBlockUserData(QString time, int revision)
+    TextBlockUserData()
     {
-        _time = time;
-        _revision = revision;
     }
-    QString time() {return _time;}
-    int revision() {return _revision;}
     QVector <UBracketInfo *> brackets()
     { return m_brackets; }
     void insert(UBracketInfo *info)
@@ -136,8 +132,6 @@ public:
         }
     }
 private:
-    QString _time;
-    int _revision;
     QVector <UBracketInfo *> m_brackets;
     QVector <USearchInfo *> findInfo;
 };

@@ -57,6 +57,7 @@
 #include <QString>
 #include <QStringList>
 #include <QCursor>
+#include <QFile>
 #include "codeeditor.h"
 #include "global.h"
 
@@ -78,7 +79,6 @@ static bool isRightBrackets(QChar symbol)
 
 CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
 {
-    //blockSignals(true);
     lineNumberArea = new LineNumberArea(this);
     highlighter = new Highlighter(document());
 
@@ -87,7 +87,19 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     connect(this, SIGNAL(cursorPositionChanged()),
              this, SLOT(matchBrackets()));         
     init();
-    //blockSignals(false);
+}
+
+QByteArray CodeEditor::utf8DataOfFile(QString absPathFile)
+{
+    QByteArray res;
+    if(allDocumentsData.contains(absPathFile))
+        res = allDocumentsData[absPathFile].doc->toPlainText().toUtf8();
+    return res;
+}
+
+bool CodeEditor::containsFile(QString absPathFile)
+{
+    return allDocumentsData.contains(absPathFile);
 }
 
 ErrWarningBuildData CodeEditor::err_warnToBlockNumber(int nBlockNumber)
@@ -105,9 +117,41 @@ void CodeEditor::slotFindAllCurrentFile()
     QMap<QString, QVector<SearchItem>> res;
     //fill res
     {
-        auto finds = fillFindResults();
+        auto finds = fillFindResults(currentName);
         if(!finds.isEmpty())
-            res["Smart Contract Editor"] = finds;
+            res[currentName] = finds;
+    }
+    emit sigFindResults(res);
+}
+
+void CodeEditor::slotFindAllCurProject()
+{
+    QMap<QString, QVector<SearchItem>> res;
+    //fill res
+    foreach(auto nameFile, allDocumentsData.keys())
+    {
+        DocumentFileData documentData = allDocumentsData[nameFile];
+        if(!documentData.bProjectFile)
+            continue;
+        documentData.high->markSearch(strSearch);
+        auto finds = fillFindResults(nameFile);
+        if(!finds.isEmpty())
+            res[nameFile] = finds;
+    }
+    emit sigFindResults(res);
+}
+
+void CodeEditor::slotFindAllAllFiles()
+{
+    QMap<QString, QVector<SearchItem>> res;
+    //fill res
+    foreach(auto nameFile, allDocumentsData.keys())
+    {
+        DocumentFileData documentData = allDocumentsData[nameFile];
+        documentData.high->markSearch(strSearch);
+        auto finds = fillFindResults(nameFile);
+        if(!finds.isEmpty())
+            res[nameFile] = finds;
     }
     emit sigFindResults(res);
 }
@@ -115,7 +159,7 @@ void CodeEditor::slotFindAllCurrentFile()
 void CodeEditor::slotSearchMark(QString strCurrent)
 {
     strSearch =strCurrent;
-    int firstFinding = highlighter->markSearch(strCurrent);
+    int firstFinding = allDocumentsData[currentName].high->markSearch(strCurrent);
     if(firstFinding >= 0)
     {
         auto tCursor = textCursor();
@@ -125,10 +169,11 @@ void CodeEditor::slotSearchMark(QString strCurrent)
     highlightCurrentLine();
 }
 
-QVector<SearchItem> CodeEditor::fillFindResults()
+QVector<SearchItem> CodeEditor::fillFindResults(QString nameFile)
 {
     QVector<SearchItem> res;
-    QTextBlock block = document()->firstBlock();
+    QTextBlock block;
+    block = allDocumentsData[nameFile].doc->firstBlock();
     while(block.isValid())
     {
         auto userData = static_cast <TextBlockUserData *> (
@@ -163,7 +208,7 @@ void CodeEditor::keyPressEvent(QKeyEvent *event)
         moveCursor (QTextCursor::Start);
         insertPlainText ("\n");
         moveCursor (QTextCursor::Start);
-        highlighter->rehighlightBlock(
+        allDocumentsData[currentName].high->rehighlightBlock(
                     document()->findBlockByLineNumber(1));
         event->ignore();
     }
@@ -185,7 +230,26 @@ void CodeEditor::init()
 void CodeEditor::slotHighlightingCode(bool on)
 {
     Q_UNUSED(on);
-    highlighter->rehighlight();
+    allDocumentsData[currentName].high->rehighlight();
+}
+
+void CodeEditor::renameDocument(QString newName, QString oldName)
+{
+    allDocumentsData[newName].doc = allDocumentsData[oldName].doc;
+    allDocumentsData[newName].high= allDocumentsData[oldName].high;
+    allDocumentsData.remove(oldName);
+    if(currentName == oldName)
+        currentName = newName;
+}
+
+void CodeEditor::removeDocument(QString nameDocument)
+{
+    if(allDocumentsData.contains(nameDocument))
+    {
+        auto doc = allDocumentsData[nameDocument].doc;
+        allDocumentsData.remove(nameDocument);
+        delete doc;
+    }
 }
 
 void CodeEditor::slotFindNext()
@@ -235,14 +299,111 @@ void CodeEditor::slotFindNext()
     }
 }
 
+//will open all files and store them in
+//new QTextDocument in cur_projDocuments
+//+clear previous data
+void CodeEditor::addCurrentProject(QStringList filesProject) //files - absolute file path of current *.sol and all it imports
+{
+    //clear previous project
+    auto list = allDocumentsData.keys();
+    QMutableListIterator<QString> iter_AllDocs(list);
+    while(iter_AllDocs.hasNext())
+    {
+        QString fileName = iter_AllDocs.next();
+        DocumentFileData documentData = allDocumentsData[fileName];
+        if(!documentData.bProjectFile)
+            continue;
+        if(documentData.bOpenFile)
+        {
+            documentData.bProjectFile = false;
+            return;
+        }
+        auto doc = documentData.doc;
+        disconnect(doc, &QTextDocument::contentsChange,
+                this, &CodeEditor::contentsChange);
+        allDocumentsData.remove(fileName);
+        iter_AllDocs.remove();
+        delete doc;
+    }
+
+    foreach(auto absFileName, filesProject)
+    {
+        if(allDocumentsData.contains(absFileName))
+        {
+            allDocumentsData[absFileName].bProjectFile = true;
+            continue;
+        }
+        QByteArray data;
+        QFile file(absFileName);
+        if(!file.open(QIODevice::ReadOnly))
+            continue;
+        data = file.readAll();
+        file.close();
+        allDocumentsData[absFileName].doc = new QTextDocument(&documentsParent);
+        allDocumentsData[absFileName].doc->setDocumentLayout(new QPlainTextDocumentLayout(allDocumentsData[absFileName].doc));
+        allDocumentsData[absFileName].high = new Highlighter(allDocumentsData[absFileName].doc);
+        allDocumentsData[absFileName].doc->setPlainText(QString::fromUtf8(data));
+        allDocumentsData[absFileName].bProjectFile = true;
+        allDocumentsData[absFileName].bOpenFile = false;
+        connect(allDocumentsData[absFileName].doc, &QTextDocument::contentsChange,
+                this, &CodeEditor::contentsChange);
+    }
+}
+
+void CodeEditor::setCurrentDocument(QString nameDocument)
+{
+    if(allDocumentsData.contains(nameDocument))
+    {
+        allDocumentsData[nameDocument].bOpenFile = true;
+        if(allDocumentsData[nameDocument].doc != document())
+        {
+            setDocument(allDocumentsData[nameDocument].doc);
+            currentName = nameDocument;
+            int firstFinding = allDocumentsData[currentName].high->markSearch(strSearch);
+            if(firstFinding >= 0)
+            {
+                auto tCursor = textCursor();
+                tCursor.setPosition(firstFinding);
+                setTextCursor(tCursor);
+            }
+            init();
+        }
+    }
+    else
+    {
+        allDocumentsData[nameDocument].doc = new QTextDocument(&documentsParent);
+        allDocumentsData[nameDocument].doc->setDocumentLayout(new QPlainTextDocumentLayout(allDocumentsData[nameDocument].doc));
+        setDocument(allDocumentsData[nameDocument].doc);
+        allDocumentsData[nameDocument].high = new Highlighter(allDocumentsData[nameDocument].doc);
+        allDocumentsData[nameDocument].bOpenFile = true;
+        allDocumentsData[nameDocument].bProjectFile = false;
+        connect(allDocumentsData[nameDocument].doc, &QTextDocument::contentsChange,
+                this, &CodeEditor::contentsChange);
+        currentName = nameDocument;
+        init();
+    }
+}
+
+void CodeEditor::slotReplaceAllAll(QString replaceStr)
+{
+    bool bFirst = true;
+    foreach(QString fileName, allDocumentsData.keys())
+    {
+        allDocumentsData[fileName].high->markSearch(strSearch);
+        replaceInFile(fileName,
+                      replaceStr,
+                      bFirst);
+        bFirst = false;
+    }
+}
 
 void CodeEditor::slotCurrentFindResultChanged(QString fileName,
                                               int blockNumber,
                                               int positionResult)
 {
-    Q_UNUSED(fileName);
     QTextCursor tcursor = textCursor();
-    tcursor.setPosition(document()->findBlockByNumber(blockNumber).position()
+    QTextDocument * doc = allDocumentsData[fileName].doc;
+    tcursor.setPosition(doc->findBlockByNumber(blockNumber).position()
                         + positionResult);
     setTextCursor(tcursor);
 }
@@ -378,6 +539,21 @@ void CodeEditor::slotReplace(QString replaceStr)
     slotFindNext();
 }
 
+void CodeEditor::slotReplaceAllCurProject(QString replaceStr)
+{
+    bool bFirst = true;
+    foreach(QString fileName, allDocumentsData.keys())
+    {
+        if(!allDocumentsData[fileName].bProjectFile)
+            continue;
+        allDocumentsData[fileName].high->markSearch(strSearch);
+        replaceInFile(fileName,
+                      replaceStr,
+                      bFirst);
+        bFirst = false;
+    }
+}
+
 void CodeEditor::slotReplaceAllCurrent(QString replaceStr)
 {
     replaceInFile(currentName, replaceStr, true);
@@ -387,10 +563,14 @@ void CodeEditor::replaceInFile(QString fileName,
                                QString replaceStr,
                                bool bFirstFile)
 {
-    Q_UNUSED(fileName);
-    auto block = document()->firstBlock();
+
+    QTextDocument * doc = allDocumentsData[fileName].doc;
+    Highlighter * highlight = allDocumentsData[fileName].high;
+
+    qDebug() << "fileName=" << fileName;
+    auto block = doc->firstBlock();
     bool bFirstOperation = bFirstFile;
-    auto tCursor = QTextCursor(document());
+    auto tCursor = QTextCursor(doc);
     while(block.isValid())
     {        
         auto userData = static_cast <TextBlockUserData *> (
@@ -399,7 +579,7 @@ void CodeEditor::replaceInFile(QString fileName,
         {
             auto finds = userData->finds();
             if(!finds.isEmpty())
-                highlighter->setHighlightSearch(false);
+                highlight->setHighlightSearch(false);
             for(int i=0; i<finds.size(); i++)
             {
                 auto find = finds[i];
@@ -426,8 +606,8 @@ void CodeEditor::replaceInFile(QString fileName,
             }
             if(!finds.isEmpty())
             {
-                highlighter->setHighlightSearch(true);
-                highlighter->rehighlightBlock(block);
+                highlight->setHighlightSearch(true);
+                highlight->rehighlightBlock(block);
             }
         }
         block = block.next();
@@ -501,6 +681,11 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
         if (bottom >= event->rect().top())
         {
             QString number = QString::number(blockNumber + 1);
+            TextBlockUserData * data = new TextBlockUserData();
+            if(!block.userData())
+            {
+                block.setUserData(data);
+            }
             if(block.isVisible() )
             {
                 painter.setPen(Qt::black);
@@ -526,7 +711,6 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
         bottom = top + (int) blockBoundingRect(block).height();
         ++blockNumber;
     }
-
 
 }
 

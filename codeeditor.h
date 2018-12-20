@@ -93,11 +93,36 @@ public:
     void calcLineNumberAreaWidth();
     void setErr_Warnings(const QMap<int, ErrWarningBuildData> & list);
     ErrWarningBuildData err_warnToBlockNumber(int nBlockNumber);
+    void removeDocument(QString nameDocument);
+    void renameDocument(QString newName, QString oldName);
+    void setCurrentDocument(QString nameDocument);
+    //will open all files and store them in
+    //new QTextDocument in cur_projDocuments
+    //+clear previous data
+    void addCurrentProject(QStringList files); //files - absolute file path of current *.sol and all it imports
+    bool containsFile(QString absPathFile);
+    QByteArray utf8DataOfFile(QString absPathFile);
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void keyPressEvent(QKeyEvent *event);
     void paintEvent(QPaintEvent *event) override;
 private:
+    struct DocumentFileData
+    {
+        DocumentFileData()
+        {}
+        DocumentFileData(QTextDocument * doc, Highlighter * high,
+                         bool bOpenFile, bool bProjectFile):
+                            doc(doc),
+                            high(high),
+                            bOpenFile(bOpenFile),
+                            bProjectFile(bProjectFile)
+        {}
+        QTextDocument * doc {nullptr};
+        Highlighter * high {nullptr};
+        bool bOpenFile {false};
+        bool bProjectFile {false};
+    };
     QWidget *lineNumberArea;
     QPointer<Highlighter> highlighter;
     QObject documentsParent;
@@ -113,9 +138,9 @@ private:
                             int index, int numberRightBracket);
     void createBracketsSelection(int position);
     QString strSearch;
-    QVector<SearchItem> fillFindResults();
+    QVector<SearchItem> fillFindResults(QString nameFile);
     QMap<int, ErrWarningBuildData> err_warnings; //<nBlockNumber (0,1,...), warningData>
-
+    QMap<QString, DocumentFileData> allDocumentsData;
     void replaceInFile(QString fileName,
                        QString replaceStr,
                        bool bFirstFile);
@@ -123,6 +148,8 @@ public slots:
     void slotHighlightingCode(bool on);
     //find
     void slotFindAllCurrentFile();
+    void slotFindAllAllFiles();
+    void slotFindAllCurProject();
     void slotFindNext();
     void slotFindPrev();
     //mark
@@ -130,10 +157,13 @@ public slots:
     //replace
     void slotReplace(QString replaceStr);
     void slotReplaceAllCurrent(QString replaceStr);
+    void slotReplaceAllAll(QString replaceStr);
+    void slotReplaceAllCurProject(QString replaceStr);
     //choose
     void slotCurrentFindResultChanged(QString fileName,
                                       int blockNumber,
                                       int positionResult);
+
 private slots:
     void updateLineNumberAreaWidth(int newBlockCount);
     void highlightCurrentLine();
@@ -142,6 +172,7 @@ private slots:
 signals:
     void newChanges();
     void sigFindResults(findResults);
+    void contentsChange(int position, int charsRemoved, int charsAdded);
 };
 
 class LineNumberArea : public QWidget

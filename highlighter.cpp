@@ -55,8 +55,6 @@
 #include "global.h"
 
 
-
-
 Highlighter::Highlighter(QTextDocument *parent)
     : QSyntaxHighlighter(parent)
 {
@@ -182,10 +180,7 @@ int Highlighter::markSearch(const QString &strMark)
             TextBlockUserData *data = static_cast<TextBlockUserData *>(block.userData());
             if(data == nullptr)
             {
-                QString dateTime = QLocale("en_EN").toString(
-                                    QDateTime::currentDateTime(),
-                                    "hh:mm ap M/d/yyyy");
-                data = new TextBlockUserData(dateTime, block.revision());
+                data = new TextBlockUserData();
             }
             bool oldFind = false;
             //fill oldFind
@@ -267,10 +262,9 @@ void Highlighter::matchSearch(const QTextBlock& block,
 void Highlighter::highlightBlock(const QString &text)
 {
     TextBlockUserData *data = static_cast<TextBlockUserData *>(currentBlockUserData());
-    QString dateTime = QLocale("en_EN").toString(QDateTime::currentDateTime(), "hh:mm ap M/d/yyyy");
     if(data == nullptr)
     {
-        data = new TextBlockUserData(dateTime, currentBlock().revision());
+        data = new TextBlockUserData();
     }
     else
         data->insert(QVector <UBracketInfo *>());

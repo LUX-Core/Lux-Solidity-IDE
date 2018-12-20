@@ -24,14 +24,13 @@ class AllOpenFilesModel : public QAbstractListModel
 
 public:
     enum DataRole{
-        AllDataRole = Qt::UserRole + 1
+        AllDataRole = Qt::UserRole + 1,
+        EditingDataRole,
+        TmpDataRole,    //if file is tmp
+        AbsFilePathRole
     };
 
     AllOpenFilesModel(QObject *parent = nullptr);
-    //return row of file
-    //return -1 if there is no such file
-    int findFile(QString fullPath);
-    bool setEditFlag(int iRow, bool bOn);
 
     //override functions
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
