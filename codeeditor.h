@@ -74,12 +74,30 @@ class LineNumberArea;
 
 struct ErrWarningBuildData
 {
+    ErrWarningBuildData(const ErrWarningBuildData & other)
+    {
+        iX = other.iX;
+        iY = other.iY;
+        type = other.type;
+        message = other.message;
+    }
+    ErrWarningBuildData & operator=(const ErrWarningBuildData & other)
+    {
+        iX = other.iX;
+        iY = other.iY;
+        type = other.type;
+        message = other.message;
+        return *this;
+    }
+    ErrWarningBuildData()
+    {}
     enum ErrBuildTypes {iEmpty, iError, iWarning};
     int iX{0};
     int iY{0};
     ErrBuildTypes type {iEmpty};
     QString message;
 };
+Q_DECLARE_METATYPE(ErrWarningBuildData)
 
 class CodeEditor : public QPlainTextEdit
 {
@@ -91,7 +109,7 @@ public:
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     int lineNumberAreaWidth();
     void calcLineNumberAreaWidth();
-    void setErr_Warnings(const QMap<int, ErrWarningBuildData> & list);
+    void setErr_Warnings(const QMap<QString, QMap<int, ErrWarningBuildData> > &list);
     ErrWarningBuildData err_warnToBlockNumber(int nBlockNumber);
     void removeDocument(QString nameDocument);
     void renameDocument(QString newName, QString oldName);
@@ -112,16 +130,19 @@ private:
         DocumentFileData()
         {}
         DocumentFileData(QTextDocument * doc, Highlighter * high,
-                         bool bOpenFile, bool bProjectFile):
+                         bool bOpenFile, bool bProjectFile,
+                         QMap<int, ErrWarningBuildData> err_warnings):
                             doc(doc),
                             high(high),
                             bOpenFile(bOpenFile),
-                            bProjectFile(bProjectFile)
+                            bProjectFile(bProjectFile),
+                            err_warnings(err_warnings)
         {}
         QTextDocument * doc {nullptr};
         Highlighter * high {nullptr};
         bool bOpenFile {false};
         bool bProjectFile {false};
+        QMap<int, ErrWarningBuildData> err_warnings; //<nBlockNumber (0,1,...), warningData>
     };
     QWidget *lineNumberArea;
     QPointer<Highlighter> highlighter;
@@ -139,7 +160,7 @@ private:
     void createBracketsSelection(int position);
     QString strSearch;
     QVector<SearchItem> fillFindResults(QString nameFile);
-    QMap<int, ErrWarningBuildData> err_warnings; //<nBlockNumber (0,1,...), warningData>
+
     QMap<QString, DocumentFileData> allDocumentsData;
     void replaceInFile(QString fileName,
                        QString replaceStr,

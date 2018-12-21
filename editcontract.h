@@ -55,6 +55,7 @@ private:
     void getDownloadLinksSolc();
     QMap<QString, QString> downloadLinksSolc; //<version, downloadLink>
     QMap<QString, QString> pathsSolc; //<version, path>
+    QStringList activeSolcImportPathes;
     void customizeComboBoxCompiler(int index, bool bDownload);
     void startBuild();
     void openEditFile(const QFileInfo &  info, bool bTmp, bool bActiveSol);

@@ -51,6 +51,20 @@
 //treeWidgetCurrentProject roles
 #define defFileInfoRole Qt::UserRole + 1
 
+//building project
+#define defBuildingSolcPath  "BuildingSolcPath"
+#define defBuildingSolcVersionPath  "BuildingSolcVersionPath"
+
+//erros/warnings widget
+#define defErrWarningsPadding  30
+
+//listwidget errwarnings roles
+#define defX_Shift_Role Qt::UserRole + 1
+#define defY_Shift_Role Qt::UserRole + 2
+#define defAbs_File_Path_Role Qt::UserRole + 3
+#define defClickable_Item_Role Qt::UserRole + 4
+#define defTmp_Role Qt::UserRole + 5
+
 EditContract::EditContract(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::EditContract)
@@ -386,6 +400,7 @@ void EditContract::slotListAllOpenClickFile(const QModelIndex & index)
 void EditContract::fillInImports(QString absFilePath)
 {
     const auto & listImports = parseImports(absFilePath);
+    activeSolcImportPathes.clear();
     auto importsItem = ui->treeWidgetCurrentProject->topLevelItem(_UpdatesFolder);
     if(listImports.isEmpty())
     {
@@ -416,6 +431,8 @@ void EditContract::fillInImports(QString absFilePath)
         item->setData(0,defFileInfoRole,
                          QVariant::fromValue(EditFileData(info, false)));
         importsItem->addChild(item);
+        if(!activeSolcImportPathes.contains(info.absolutePath()))
+            activeSolcImportPathes << info.absolutePath();
     }
     ui->codeEdit->addCurrentProject(QStringList()<< absFilePath << listImports);
     ui->treeWidgetCurrentProject->model()->sort(0);
@@ -566,6 +583,7 @@ void EditContract::openEditFile(const QFileInfo & info, bool bTmp,
 
 void EditContract::slotSolcCodeChanged(int position, int charsRemoved, int charsAdded)
 {
+    Q_UNUSED(position)
     if(!bNewTextOpenFile &&
       (charsRemoved>0 || charsAdded>0))
     {
@@ -778,13 +796,14 @@ void EditContract::slotOptimizationStateChanged(int state)
 
 void EditContract::slotErrWarningClicked(QListWidgetItem *item)
 {
-    QLabel * label = qobject_cast<QLabel*>(ui->listWidgetErrWarnings->itemWidget(item));
-    QString err_warning = label->text();
-    QStringList params = err_warning.split(":",QString::SkipEmptyParts);
-    if(params.size() > 3)
+    if(item->data(defClickable_Item_Role).toBool())
     {
-        int nLine = params[1].toInt();
-        int nOffset = params[2].toInt();
+        int nLine = item->data(defY_Shift_Role).toInt();
+        int nOffset = item->data(defX_Shift_Role).toInt();
+        bool bTmp = item->data(defTmp_Role).toBool();
+        QString absFilePath = item->data(defAbs_File_Path_Role).toString();
+        QFileInfo info(absFilePath);
+        openEditFile(info, bTmp, false);
         auto block = ui->codeEdit->document()->findBlockByNumber(nLine-1);
         QTextCursor cursor = ui->codeEdit->textCursor();
         cursor.setPosition(block.position() + nOffset);
@@ -860,9 +879,9 @@ bool EditContract::eventFilter(QObject *watched, QEvent *event)
                 int height = fm.boundingRect(QRect(0,0, ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(), 100),
                                            Qt::TextWordWrap, label->text()).size().height();
                 label->setMinimumSize(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
-                                            height));
+                                            height + defErrWarningsPadding));
                 item->setSizeHint(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
-                                        height));
+                                        height + defErrWarningsPadding));
             }
         }
     }
@@ -905,26 +924,24 @@ void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStat
     {
         QString errorBuild = QString(process_build->readAllStandardError());
 
-        QStringList err_warnings = errorBuild.split(tmpDir->filePath("tmp.sol"),
-                                        QString::SkipEmptyParts);
-        if(err_warnings.isEmpty())
-            err_warnings = errorBuild.split(tmpDir->filePath("tmp.sol").replace("/", "\\"),
-                                            QString::SkipEmptyParts);
+        //remove ^--...---^, \n and others
+        errorBuild.remove(QRegExp("\\n\\^\\s*\\-+\\s*\\^\\n"));
+        QStringList err_warnings = errorBuild.split(";");
 
         //fill in listWidgetErrWarnings
         foreach(auto strWarning, err_warnings)
         {
-            QString textItem;
-            if(strWarning.contains(QCoreApplication::applicationDirPath() + "/" + strCompilePath))
-                textItem = strWarning;
-            else
-                textItem = "contract" + strWarning;
+            QStringList properties = strWarning.split(":", QString::SkipEmptyParts);
+            if(properties.size() < 2)
+                continue;
+            QFileInfo info(properties[0]);
+            strWarning.replace(properties[0], info.fileName());
             QListWidgetItem * item = new QListWidgetItem();
             ui->listWidgetErrWarnings->addItem(item);
             QLabel * label = new QLabel(ui->listWidgetErrWarnings);
             label->setWordWrap(true);
             label->setTextInteractionFlags(Qt::TextSelectableByMouse);
-            label->setText(textItem);
+            label->setText(strWarning);
             label->setIndent(10);
             label->setAlignment(Qt::AlignLeft);
             label->setProperty("item", reinterpret_cast<qlonglong>(item));
@@ -932,21 +949,31 @@ void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStat
             //TODO understand why 4*spacing (not 2)...
             QFontMetrics fm(item->font());
             int height = fm.boundingRect(QRect(0,0, ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(), 100),
-                                       Qt::TextWordWrap, textItem).size().height();
+                                       Qt::TextWordWrap, strWarning).size().height();
             label->setMinimumSize(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
-                                        height));
+                                        height + defErrWarningsPadding));
             item->setSizeHint(QSize(ui->listWidgetErrWarnings->width() - 4*ui->listWidgetErrWarnings->spacing(),
-                                    height));
+                                    height + defErrWarningsPadding));
+            if(properties.size() >= 4)
+            {
+                item->setData(defX_Shift_Role, properties[2].simplified().remove(" ").toInt());
+                item->setData(defY_Shift_Role, properties[1].simplified().remove(" ").toInt());
+                item->setData(defAbs_File_Path_Role, properties[0]);
+                item->setData(defClickable_Item_Role, true);
+                item->setData(defTmp_Role, activeSolFileData().bTmp);
+            }
             ui->listWidgetErrWarnings->setItemWidget(item,
                                                       label);
 
         }
-        bool bSuccess = true;
+
         //add err_warnings to codeEdit
-        QMap<int, ErrWarningBuildData> codeEditorWarnings;
+        bool bSuccess = true;
+        QMap<QString, QMap<int, ErrWarningBuildData>> codeEditorWarnings;
         foreach(auto strWarning, err_warnings)
         {
-            if(strWarning.contains(QCoreApplication::applicationDirPath() + "/" + strCompilePath)
+            QString buildVersionPath = process_build->property(defBuildingSolcVersionPath).toString();
+            if(strWarning.contains(buildVersionPath)
                     &&
                strWarning.toLower().contains("error"))
             {
@@ -957,9 +984,9 @@ void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStat
             QStringList properties = strWarning.split(":", QString::SkipEmptyParts);
             if(properties.size() >= 4)
             {
-                data.iY = properties[0].simplified().remove(" ").toInt();
-                data.iX = properties[1].simplified().remove(" ").toInt();
-                if(properties[2].contains("Error"))
+                data.iY = properties[1].simplified().remove(" ").toInt();
+                data.iX = properties[2].simplified().remove(" ").toInt();
+                if(properties[3].contains("Error"))
                 {
                     data.type = ErrWarningBuildData::iError;
                     bSuccess = false;
@@ -968,9 +995,10 @@ void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStat
                 {
                     data.type = ErrWarningBuildData::iWarning;
                 }
-                data.message = "contract" + strWarning;
+                QFileInfo info(properties[0]);
+                data.message = strWarning.replace(properties[0], info.fileName());
             }
-            codeEditorWarnings[data.iY-1] = data;
+            codeEditorWarnings[properties[0]][data.iY-1] = data;
         }
         ui->codeEdit->setErr_Warnings(codeEditorWarnings);
         ui->codeEdit->update();
@@ -1190,12 +1218,18 @@ void EditContract::startBuild()
     ui->pushButtonBuild->setEnabled(false);
     ui->comboBoxChooseDeploy->clear();
     ui->listWidgetErrWarnings->clear();
-    QDir deployDir(tmpDir->filePath("output"));
-    deployDir.removeRecursively();
-    QDir(tmpDir->path()).mkpath("output");
 
-    QString tmpPath = tmpDir->filePath("tmp.sol");
-    QFile file_tmp(tmpPath);
+    QFileInfo infoActiveSol = activeSolFileData().fileInfo;
+    if(activeSolFileData().bTmp)
+        infoActiveSol = QFileInfo(tmpDir->filePath("tmp.sol"));
+
+    QString outputPath = infoActiveSol.absolutePath() + "/output";
+    QDir deployDir(outputPath);
+    deployDir.removeRecursively();
+    QDir(infoActiveSol.path()).mkpath("output");
+    QString activeSolPath = infoActiveSol.absoluteFilePath();
+
+    QFile file_tmp(activeSolPath);
     if(!file_tmp.open(QIODevice::WriteOnly))
     {
         QMessageBox::critical(this, tr("Smart contract Build"),
@@ -1205,16 +1239,33 @@ void EditContract::startBuild()
     file_tmp.write(ui->codeEdit->document()->toPlainText().toLocal8Bit());
     file_tmp.close();
     QString params = " --bin --abi --overwrite ";
+    //QString params;
     if(ui->checkBoxOptimization->isChecked())
     {
         int nRuns = ui->spinBoxRuns->value();
         params = " --optimize-runs " + QString::number(nRuns) + params;
     }
+    if(!activeSolcImportPathes.isEmpty())
+    {
+        params += " --allow-paths ";
+        for(int i=0; i<activeSolcImportPathes.size(); i++)
+        {
+            params += activeSolcImportPathes[i] + ",";
+        }
+        params.remove(params.size() - 1, 1);
+        params += " ";
+    }
+
     QString version = ui->comboBoxCompilerVersion->currentText();
     qDebug() << pathsSolc[version];
-    process_build->start(pathsSolc[version]
-                         + params + tmpPath
-                         + " -o " + tmpDir->filePath("output"));
+    //process_build->setWorkingDirectory(infoActiveSol.path());
+    QString strProcExec = pathsSolc[version]
+            + params + activeSolPath
+            + " -o " + outputPath;
+    qDebug() << strProcExec;
+    process_build->start(strProcExec);
+    process_build->setProperty(defBuildingSolcPath,infoActiveSol.path());
+    process_build->setProperty(defBuildingSolcVersionPath,pathsSolc[version]);
 }
 
 EditContract::~EditContract()

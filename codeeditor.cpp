@@ -104,12 +104,21 @@ bool CodeEditor::containsFile(QString absPathFile)
 
 ErrWarningBuildData CodeEditor::err_warnToBlockNumber(int nBlockNumber)
 {
-    return err_warnings[nBlockNumber];
+    return allDocumentsData[currentName].err_warnings[nBlockNumber];
 }
 
-void CodeEditor::setErr_Warnings(const QMap<int, ErrWarningBuildData> &list)
+void CodeEditor::setErr_Warnings(const QMap<QString, QMap<int, ErrWarningBuildData>> &list)
 {
-    err_warnings = list;
+    //clear
+    foreach(auto fileName, allDocumentsData.keys())
+    {
+        allDocumentsData[fileName].err_warnings.clear();
+    }
+    //add new
+    foreach(auto fileName, list.keys())
+    {
+        allDocumentsData[fileName].err_warnings = list[fileName];
+    }
 }
 
 void CodeEditor::slotFindAllCurrentFile()
@@ -692,13 +701,13 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
                 painter.drawText(20 + fontMetrics().height(), top, lineNumberArea->width(), fontMetrics().height(),
                                  Qt::AlignLeft,number);
 
-                if(err_warnings.contains(blockNumber))
+                if(allDocumentsData[currentName].err_warnings.contains(blockNumber))
                 {
                     QPixmap pix;
-                    if(ErrWarningBuildData::iError == err_warnings[blockNumber].type)
+                    if(ErrWarningBuildData::iError == allDocumentsData[currentName].err_warnings[blockNumber].type)
                         pix = QPixmap("://imgs/error.png").scaledToHeight(fontMetrics().height(),
                                                                           Qt::SmoothTransformation);
-                    if(ErrWarningBuildData::iWarning == err_warnings[blockNumber].type)
+                    if(ErrWarningBuildData::iWarning == allDocumentsData[currentName].err_warnings[blockNumber].type)
                         pix = QPixmap("://imgs/warning.png").scaledToHeight(fontMetrics().height(),
                                                                             Qt::SmoothTransformation);
                     painter.drawPixmap(10, top, pix);
