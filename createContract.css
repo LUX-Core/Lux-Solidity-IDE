@@ -5,18 +5,23 @@ QFrame#csTypeWidget
     background-color: #ededed;
 }
 
-QWidget#EditContract  .QTreeWidget#treeWidgetCurrentProject
+QWidget#EditContract
 {
-    border: 1px solid black;
-    border-radius: 10px;
-    padding: 5px;
+    background-color: #3D3C3A;
 }
 
-QWidget#EditContract  .QListView#listViewAllOpenFiles
+QWidget#EditContract  .QFrame#frameWidgetCurrentProject
 {
     border: 1px solid black;
     border-radius: 10px;
-    padding: 5px;
+    background-color:white;
+}
+
+QWidget#EditContract  .QFrame#frameAllOpenFiles
+{
+    border: 1px solid black;
+    border-radius: 10px;
+    background-color: white;
 }
 
 QWidget#EditContract .QFrame
@@ -27,17 +32,17 @@ QWidget#EditContract .QFrame
 
 QWidget#EditContract .CodeEditor#codeEdit{
     border: 1px solid black;
-    border-radius: 10px;
-    padding: 5px;
+    /*border-radius: 10px;
+    padding: 5px;*/
 }
 
 QWidget#EditContract  .QLabel#labelFileName
 {
-    border: 1px solid black;
-    border-radius: 10px;
-    color: #191970;
+    /*border: 1px solid black;
+    border-radius: 10px;*/
+    color: #E5E4E2;
     /*background-color: #98AFC7;*/
-    background-color: white;
+    /*background-color: white;*/
     min-height:25;
     max-height:25;
 }
@@ -67,6 +72,12 @@ QWidget#EditContract  .QFrame#toolsFrame
 {
     min-height:40;
     max-height:40;
+    background-color: #E5E4E2;
+}
+
+QWidget#EditContract  .QFrame#frameBuild
+{
+    background-color: #E5E4E2;
 }
 
 QWidget#EditContract  .QComboBox#comboBoxCompilerVersion

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>723</width>
-    <height>586</height>
+    <width>734</width>
+    <height>575</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -22,7 +22,23 @@
   <property name="styleSheet">
    <string notr="true"/>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_5">
+  <layout class="QVBoxLayout" name="verticalLayout_6">
+   <property name="topMargin">
+    <number>2</number>
+   </property>
+   <item>
+    <widget class="QLabel" name="labelFileName">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="textFormat">
+      <enum>Qt::PlainText</enum>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
    <item>
     <widget class="QFrame" name="toolsFrame">
      <property name="frameShape">
@@ -160,19 +176,6 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="labelFileName">
-     <property name="text">
-      <string/>
-     </property>
-     <property name="textFormat">
-      <enum>Qt::PlainText</enum>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item>
     <widget class="QSplitter" name="splitterEditCode">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -182,7 +185,7 @@
        <enum>Qt::Vertical</enum>
       </property>
       <widget class="QWidget" name="">
-       <layout class="QVBoxLayout" name="verticalLayout_3">
+       <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
          <widget class="QLabel" name="labelCurrentProjectTytle">
           <property name="text">
@@ -194,36 +197,63 @@
          </widget>
         </item>
         <item>
-         <widget class="QTreeWidget" name="treeWidgetCurrentProject">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <widget class="QFrame" name="frameWidgetCurrentProject">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
           </property>
-          <property name="minimumSize">
-           <size>
-            <width>200</width>
-            <height>0</height>
-           </size>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
           </property>
-          <attribute name="headerVisible">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="headerCascadingSectionResizes">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="headerDefaultSectionSize">
-           <number>100</number>
-          </attribute>
-          <attribute name="headerStretchLastSection">
-           <bool>true</bool>
-          </attribute>
-          <column>
-           <property name="text">
-            <string/>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="leftMargin">
+            <number>5</number>
            </property>
-          </column>
+           <property name="topMargin">
+            <number>5</number>
+           </property>
+           <property name="rightMargin">
+            <number>5</number>
+           </property>
+           <property name="bottomMargin">
+            <number>5</number>
+           </property>
+           <item>
+            <widget class="QTreeWidget" name="treeWidgetCurrentProject">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+             <attribute name="headerVisible">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="headerCascadingSectionResizes">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="headerDefaultSectionSize">
+              <number>100</number>
+             </attribute>
+             <attribute name="headerStretchLastSection">
+              <bool>true</bool>
+             </attribute>
+             <column>
+              <property name="text">
+               <string/>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
        </layout>
@@ -241,19 +271,46 @@
          </widget>
         </item>
         <item>
-         <widget class="QListView" name="listViewAllOpenFiles">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <widget class="QFrame" name="frameAllOpenFiles">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
           </property>
-          <property name="minimumSize">
-           <size>
-            <width>200</width>
-            <height>0</height>
-           </size>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
           </property>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="leftMargin">
+            <number>5</number>
+           </property>
+           <property name="topMargin">
+            <number>5</number>
+           </property>
+           <property name="rightMargin">
+            <number>5</number>
+           </property>
+           <property name="bottomMargin">
+            <number>5</number>
+           </property>
+           <item>
+            <widget class="QListView" name="listViewAllOpenFiles">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
        </layout>
