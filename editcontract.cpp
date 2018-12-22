@@ -982,22 +982,23 @@ void EditContract::slotBuildFinished(int exitCode, QProcess::ExitStatus exitStat
             }
             ErrWarningBuildData data;
             QStringList properties = strWarning.split(":", QString::SkipEmptyParts);
-            if(properties.size() >= 4)
+            if(properties.size() < 4)
+                continue;
+
+            data.iY = properties[1].simplified().remove(" ").toInt();
+            data.iX = properties[2].simplified().remove(" ").toInt();
+            if(properties[3].contains("Error"))
             {
-                data.iY = properties[1].simplified().remove(" ").toInt();
-                data.iX = properties[2].simplified().remove(" ").toInt();
-                if(properties[3].contains("Error"))
-                {
-                    data.type = ErrWarningBuildData::iError;
-                    bSuccess = false;
-                }
-                else
-                {
-                    data.type = ErrWarningBuildData::iWarning;
-                }
-                QFileInfo info(properties[0]);
-                data.message = strWarning.replace(properties[0], info.fileName());
+                data.type = ErrWarningBuildData::iError;
+                bSuccess = false;
             }
+            else
+            {
+                data.type = ErrWarningBuildData::iWarning;
+            }
+            QFileInfo info(properties[0]);
+            data.message = strWarning.replace(properties[0], info.fileName());
+
             codeEditorWarnings[properties[0]][data.iY-1] = data;
         }
         ui->codeEdit->setErr_Warnings(codeEditorWarnings);
@@ -1229,15 +1230,18 @@ void EditContract::startBuild()
     QDir(infoActiveSol.path()).mkpath("output");
     QString activeSolPath = infoActiveSol.absoluteFilePath();
 
-    QFile file_tmp(activeSolPath);
-    if(!file_tmp.open(QIODevice::WriteOnly))
+    if(activeSolFileData().bTmp)
     {
-        QMessageBox::critical(this, tr("Smart contract Build"),
-                              tr("Can not create tmp file to build"));
-        return;
+        QFile file_tmp(activeSolPath);
+        if(!file_tmp.open(QIODevice::WriteOnly))
+        {
+            QMessageBox::critical(this, tr("Smart contract Build"),
+                                  tr("Can not create tmp file to build"));
+            return;
+        }
+        file_tmp.write(ui->codeEdit->document()->toPlainText().toLocal8Bit());
+        file_tmp.close();
     }
-    file_tmp.write(ui->codeEdit->document()->toPlainText().toLocal8Bit());
-    file_tmp.close();
     QString params = " --bin --abi --overwrite ";
     //QString params;
     if(ui->checkBoxOptimization->isChecked())

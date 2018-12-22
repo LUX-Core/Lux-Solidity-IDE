@@ -85,7 +85,7 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
     connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
     connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()));
     connect(this, SIGNAL(cursorPositionChanged()),
-             this, SLOT(matchBrackets()));         
+             this, SLOT(matchBrackets()));
     init();
 }
 
@@ -389,6 +389,14 @@ void CodeEditor::setCurrentDocument(QString nameDocument)
         connect(allDocumentsData[nameDocument].doc, &QTextDocument::contentsChange,
                 this, &CodeEditor::contentsChange);
         currentName = nameDocument;
+        QFont font;
+        font.setFamily("Courier");
+        font.setStyleHint(QFont::Monospace);
+        font.setFixedPitch(true);
+        font.setPointSize(10);
+        setFont(font);
+        QFontMetrics metrics(font);
+        setTabStopWidth(4*metrics.width(' '));
         init();
     }
 }
