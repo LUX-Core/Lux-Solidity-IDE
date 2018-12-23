@@ -33,7 +33,7 @@ public:
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
-
+    void closeEvent(QCloseEvent *event);
 private:
     enum activeProjectFolders {_ActiveSol, _UpdatesFolder};
     Ui::EditContract *ui;
@@ -67,6 +67,7 @@ private:
     QModelIndex indexAllOpenFiles(QString absFilePath);
     bool bNewTextOpenFile {false};
     void unSaveChangesEditFile(bool bUnSave);
+    int NumTmpFiles {0};
 private slots:
     void slotListAllOpenClickFile(const QModelIndex &index);
     void slotTreeCurProjClickFile(QTreeWidgetItem *item);
@@ -90,6 +91,7 @@ private slots:
     void slotSaveAllFilesClick();
     void slotSaveFileClick();
     void slotSaveFileAsClick();
+    void slotNewFileClick();
     void slotFindResultChoosed(QString nameFile);
 };
 

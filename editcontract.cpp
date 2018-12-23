@@ -41,7 +41,7 @@
 #define defVersionCompiler "version"
 
 //default contract name
-#define defContractName "tmp.sol"
+#define defContractName "tmp"
 
 
 //default projects path
@@ -125,6 +125,16 @@ EditContract::EditContract(QWidget *parent) :
         //saveAsFile
         connect(ui->pushButtonSaveFileAs, &QPushButton::clicked,
                 this, &EditContract::slotSaveFileAsClick);
+        
+        //newFile
+        {
+            QShortcut * shortcut = new QShortcut(QKeySequence(tr("Ctrl+N")),
+                                                 this);
+            connect(shortcut, &QShortcut::activated,
+                    this, &EditContract::slotNewFileClick);
+            connect(ui->pushButtonNewFile, &QPushButton::clicked,
+                    this, &EditContract::slotNewFileClick);
+        }        
 
         //set tooltips
 #ifdef __APPLE__
@@ -134,6 +144,7 @@ EditContract::EditContract(QWidget *parent) :
         ui->pushButtonOpenFile->setToolTip("Undo (Cmd+O)");
         ui->pushButtonSaveFile->setToolTip("Undo (Cmd+S)");
         ui->pushButtonSaveAllFiles->setToolTip("Save All (Cmd+Shift+S)");
+        ui->pushButtonNewFile->setToolTip("New *.sol (Cmd+N)");        
 #else
         ui->pushButtonSearch->setToolTip("Search (Ctrl+F)");
         ui->pushButtonRedo->setToolTip("Redo (Ctrl+Y)");
@@ -141,6 +152,7 @@ EditContract::EditContract(QWidget *parent) :
         ui->pushButtonOpenFile->setToolTip("Undo (Ctrl+O)");
         ui->pushButtonSaveFile->setToolTip("Save (Ctrl+S)");
         ui->pushButtonSaveAllFiles->setToolTip("Save All (Ctrl+Shift+S)");
+        ui->pushButtonNewFile->setToolTip("New *.sol (Ctrl+N)");
 #endif
         ui->pushButtonSaveFileAs->setToolTip("Save As...");
     }
@@ -229,16 +241,93 @@ EditContract::EditContract(QWidget *parent) :
 
     ui->progressBarDownloadSolc->hide();
     ui->listWidgetErrWarnings->installEventFilter(this);
-    openEditFile(QFileInfo(defContractName), true, true);
     connect(ui->codeEdit, &CodeEditor::contentsChange,
             this, &EditContract::slotSolcCodeChanged);
 
     connect(ui->pushButtonAddCompiler, &QPushButton::clicked,
             this, &EditContract::slotAddSolcManually);
-
+    slotNewFileClick();
     //dont know width of splitter in this place - it is reason why
     //we get width of code editor 999999 (Of course this is more than required)
     ui->splitterEditCode->setSizes(QList<int>() <<200<<99999<<200);
+}
+
+//if will be clicked Save All will be saved all files
+//without files to which was choosed unsaved
+void EditContract::closeEvent(QCloseEvent *event)
+{
+    auto listEdit = allFilesModel->match(allFilesModel->index(0,0),
+                                     AllOpenFilesModel::EditingDataRole,
+                                     true, -1);
+    if(listEdit.isEmpty())
+    {
+        event->accept();
+        return;
+    }
+
+    bool bSaveAll = false;
+
+    auto _saveFile = [this](QModelIndex index)
+    {
+        if(allFilesModel->data(index, AllOpenFilesModel::TmpDataRole).toBool())
+        {
+            const auto & fileData = qvariant_cast<EditFileData>(allFilesModel->data(index, AllOpenFilesModel::AllDataRole));
+            QMessageBox::information(this, tr("Save as file"),
+                                     fileData.fileInfo.fileName() + tr(" - is tmp file. Please input new filename."));
+            slotSaveFileAsClick();
+        }
+        else
+            slotSaveFileClick();
+    };
+    foreach(auto index, listEdit)
+    {
+        const auto & fileData = qvariant_cast<EditFileData>(allFilesModel->data(index, AllOpenFilesModel::AllDataRole));
+        openEditFile(fileData.fileInfo, fileData.bTmp, false);
+        update();
+        if(bSaveAll)
+        {
+            _saveFile(index);
+            continue;
+        }
+        QMessageBox msgBox(this);
+        msgBox.setText(fileData.fileInfo.fileName() + tr(" has been modified. Do you want save it?"));
+        msgBox.setInformativeText("Path of file - " + fileData.fileInfo.absoluteFilePath());
+        QPushButton *dontSaveAllButton = msgBox.addButton(tr("Don't Save All"), QMessageBox::DestructiveRole);
+        QPushButton *dontSaveButton = msgBox.addButton(tr("Don't Save"), QMessageBox::DestructiveRole);
+        msgBox.setStandardButtons(QMessageBox::SaveAll | QMessageBox::Save | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Save);
+        msgBox.exec();
+
+        auto clickedButton = msgBox.clickedButton();
+
+        if(dontSaveAllButton == clickedButton)
+        {
+            event->accept();
+            return;
+        }
+        if(dontSaveButton == clickedButton)
+            continue;
+        if(msgBox.button(QMessageBox::Cancel) == clickedButton)
+        {
+            event->ignore();
+            return;
+        }
+        if(msgBox.button(QMessageBox::Save) == clickedButton)
+            _saveFile(index);
+        if(msgBox.button(QMessageBox::SaveAll) == clickedButton)
+        {
+            bSaveAll = true;
+            _saveFile(index);
+        }
+    }
+    event->accept();
+}
+
+void EditContract::slotNewFileClick()
+{
+    NumTmpFiles++;
+    openEditFile(QFileInfo(tmpDir->filePath(defContractName + QString::number(NumTmpFiles) + ".sol")),
+                 true, true);
 }
 
 void EditContract::slotFindResultChoosed(QString nameFile)
@@ -274,11 +363,11 @@ void EditContract::slotSaveAllFilesClick()
     {
         if(!allFilesModel->data(index, AllOpenFilesModel::TmpDataRole).toBool())
             continue;
-        QString absPathFile = allFilesModel->data(index, AllOpenFilesModel::AbsFilePathRole).toString();
-        QFileInfo info(absPathFile);
+        QString idFile = allFilesModel->data(index, AllOpenFilesModel::AbsFilePathRole).toString();
+        QFileInfo info(idFile);
         openEditFile(info,true, false);
         auto but = QMessageBox::question(this, tr("Save tmp file"),
-                                         info.fileName() + tr(" is tmp file. Do you want save it in disk?"),
+                                         idFile + tr(" is tmp file. Do you want save it in disk?"),
                                          QMessageBox::Yes | QMessageBox::No | QMessageBox::NoToAll,
                                          QMessageBox::No);
         if(QMessageBox::Yes == but)
@@ -298,6 +387,8 @@ void EditContract::slotSaveFileAsClick()
     QString fileAbsName = QFileDialog::getSaveFileName(this, tr("Save file as"),
                                                     QCoreApplication::applicationDirPath(),
                                                     "Solidity files (*.sol);;All files (*)");
+    QString prevName = allFilesModel->data(ui->listViewAllOpenFiles->currentIndex(),
+                                           AllOpenFilesModel::AbsFilePathRole).toString();
     if(fileAbsName.isEmpty())
         return;
     //create file and write data to it
@@ -308,20 +399,19 @@ void EditContract::slotSaveFileAsClick()
                               tr("Can not create file - ") + fileAbsName);
         return;
     }
-    file.write(ui->codeEdit->utf8DataOfFile(fileAbsName));
+    file.write(ui->codeEdit->utf8DataOfFile(prevName));
     file.close();
 
     bool bRemoveTmp = allFilesModel->data(ui->listViewAllOpenFiles->currentIndex(),
                                           AllOpenFilesModel::TmpDataRole).toBool();
 
-    QString prevName = allFilesModel->data(ui->listViewAllOpenFiles->currentIndex(),
-                                           AllOpenFilesModel::AbsFilePathRole).toString();
     if(bRemoveTmp)
         allFilesModel->removeRow(ui->listViewAllOpenFiles->currentIndex().row());
 
     auto fileInfo = QFileInfo(fileAbsName);
-    openEditFile(fileInfo, false,
-                 prevName==activeSolFileData().fileInfo.absoluteFilePath());
+    bool bActiveSol = (prevName==activeSolFileData().fileInfo.absoluteFilePath());
+
+    openEditFile(fileInfo, false, bActiveSol);
     unSaveChangesEditFile(false);
 
     //must be last action
@@ -393,7 +483,7 @@ void EditContract::slotTreeCurProjClickFile(QTreeWidgetItem *item)
 void EditContract::slotListAllOpenClickFile(const QModelIndex & index)
 {
     EditFileData data = qvariant_cast<EditFileData>(allFilesModel->data(index, AllOpenFilesModel::AllDataRole));
-    openEditFile(data.fileInfo.absoluteFilePath(), data.bTmp,
+    openEditFile(data.fileInfo, data.bTmp,
                  false);
 }
 

@@ -12,7 +12,7 @@ struct EditFileData
         bTmp(bTmp),
         bEdit(false)
     {}
-    QFileInfo fileInfo;
+    QFileInfo fileInfo; //if tmp file - absolute file path in tmp dir(file can exist, can not exist here), use as id in codeeditor
     bool bTmp {false};
     bool bEdit{false};
 };
@@ -27,7 +27,7 @@ public:
         AllDataRole = Qt::UserRole + 1,
         EditingDataRole,
         TmpDataRole,    //if file is tmp
-        AbsFilePathRole
+        AbsFilePathRole     //if tmp - absolute file path in tmp dir(file can exist, can not exist here), else absolute file path
     };
 
     AllOpenFilesModel(QObject *parent = nullptr);
