@@ -2,19 +2,19 @@
 #define CSTYPEWIDGET_H
 
 #include <QFrame>
-#include "cstypesmodel.h"
+#include "sctypesmodel.h"
 
 namespace Ui {
 class csTypeWidget;
 }
 
-class csTypeWidget : public QFrame
+class ScTypeWidget : public QFrame
 {
     Q_OBJECT
 
 public:
-    explicit csTypeWidget(const CsTypesItem & item, QWidget *parent = 0);
-    ~csTypeWidget();
+    explicit ScTypeWidget(const ScTypesItem & item, QWidget *parent = 0);
+    ~ScTypeWidget();
 private:
     Ui::csTypeWidget *ui;
 };

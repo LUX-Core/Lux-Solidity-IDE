@@ -23,6 +23,7 @@
 #include <QCoreApplication>
 #include <QSortFilterProxyModel>
 
+#include "scalltypeswidget.h"
 #include "allopenfilesmodel.h"
 #include "editcontract.h"
 #include "ui_editcontract.h"
@@ -136,25 +137,36 @@ EditContract::EditContract(QWidget *parent) :
                     this, &EditContract::slotNewFileClick);
         }        
 
+        //wizard smart contract
+        {
+            QShortcut * shortcut = new QShortcut(QKeySequence(tr("Ctrl+W")),
+                                                 this);
+            connect(shortcut, &QShortcut::activated,
+                    this, &EditContract::slotWizardSCClick);
+            connect(ui->pushButtonWizard, &QPushButton::clicked,
+                    this, &EditContract::slotWizardSCClick);
+        }
         //set tooltips
 #ifdef __APPLE__
-        ui->pushButtonSearch->setToolTip("Search (Cmd+F)");
-        ui->pushButtonRedo->setToolTip("Redo (Cmd+Y)");
-        ui->pushButtonUndo->setToolTip("Undo (Cmd+Z)");
-        ui->pushButtonOpenFile->setToolTip("Undo (Cmd+O)");
-        ui->pushButtonSaveFile->setToolTip("Undo (Cmd+S)");
-        ui->pushButtonSaveAllFiles->setToolTip("Save All (Cmd+Shift+S)");
-        ui->pushButtonNewFile->setToolTip("New *.sol (Cmd+N)");        
+        ui->pushButtonSearch->setToolTip(tr("Search (Cmd+F)"));
+        ui->pushButtonRedo->setToolTip(tr("Redo (Cmd+Y)"));
+        ui->pushButtonUndo->setToolTip(tr("Undo (Cmd+Z)"));
+        ui->pushButtonOpenFile->setToolTip(tr("Open (Cmd+O)"));
+        ui->pushButtonSaveFile->setToolTip(tr("Save (Cmd+S)"));
+        ui->pushButtonSaveAllFiles->setToolTip(tr("Save All (Cmd+Shift+S)"));
+        ui->pushButtonNewFile->setToolTip(tr("New *.sol (Cmd+N)"));
+        ui->pushButtonWizard->setToolTip(tr("SC Wizard (Cmd+W)"));
 #else
-        ui->pushButtonSearch->setToolTip("Search (Ctrl+F)");
-        ui->pushButtonRedo->setToolTip("Redo (Ctrl+Y)");
-        ui->pushButtonUndo->setToolTip("Undo (Ctrl+Z)");
-        ui->pushButtonOpenFile->setToolTip("Undo (Ctrl+O)");
-        ui->pushButtonSaveFile->setToolTip("Save (Ctrl+S)");
-        ui->pushButtonSaveAllFiles->setToolTip("Save All (Ctrl+Shift+S)");
-        ui->pushButtonNewFile->setToolTip("New *.sol (Ctrl+N)");
+        ui->pushButtonSearch->setToolTip(tr("Search (Ctrl+F)"));
+        ui->pushButtonRedo->setToolTip(tr("Redo (Ctrl+Y)"));
+        ui->pushButtonUndo->setToolTip(tr("Undo (Ctrl+Z)"));
+        ui->pushButtonOpenFile->setToolTip(tr("Open (Ctrl+O)"));
+        ui->pushButtonSaveFile->setToolTip(tr("Save (Ctrl+S)"));
+        ui->pushButtonSaveAllFiles->setToolTip(tr("Save All (Ctrl+Shift+S)"));
+        ui->pushButtonNewFile->setToolTip(tr("New *.sol (Ctrl+N)"));
+        ui->pushButtonWizard->setToolTip(tr("SC Wizard (Ctrl+W)"));
 #endif
-        ui->pushButtonSaveFileAs->setToolTip("Save As...");
+        ui->pushButtonSaveFileAs->setToolTip(tr("Save As..."));
     }
 
     //buildFrame
@@ -250,6 +262,18 @@ EditContract::EditContract(QWidget *parent) :
     //dont know width of splitter in this place - it is reason why
     //we get width of code editor 999999 (Of course this is more than required)
     ui->splitterEditCode->setSizes(QList<int>() <<200<<99999<<200);
+}
+
+void EditContract::slotWizardSCClick()
+{
+    if(sc_wizard_Wgt.isNull())
+    {
+        sc_wizard_Wgt = new ScAllTypesWidget(this);
+        sc_wizard_Wgt->show();
+
+    }
+    else
+        sc_wizard_Wgt->activateWindow();
 }
 
 //if will be clicked Save All will be saved all files

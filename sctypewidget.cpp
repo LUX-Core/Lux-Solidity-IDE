@@ -1,20 +1,21 @@
-#include "cstypewidget.h"
+#include "sctypewidget.h"
 #include "ui_cstypewidget.h"
-#include "cstypesmodel.h"
+#include "sctypesmodel.h"
 
 #include <QGraphicsDropShadowEffect>
 
-csTypeWidget::csTypeWidget(const CsTypesItem & item, QWidget *parent) :
+ScTypeWidget::ScTypeWidget(const ScTypesItem & item, QWidget *parent) :
     QFrame(parent),
     ui(new Ui::csTypeWidget)
 {
     ui->setupUi(this);
-    ui->labelIcon->setPixmap(QPixmap(item.strIcon));
+    if(!item.strIcon.isEmpty())
+        ui->labelIcon->setPixmap(QPixmap(item.strIcon));
     ui->labelDescription->setText(item.strDescription);
     ui->labelType->setText(item.strType);
 }
 
-csTypeWidget::~csTypeWidget()
+ScTypeWidget::~ScTypeWidget()
 {
     delete ui;
 }

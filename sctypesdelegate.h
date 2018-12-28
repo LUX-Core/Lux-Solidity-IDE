@@ -3,11 +3,11 @@
 
 #include <QStyledItemDelegate>
 
-class CsTypesDelegate : public QStyledItemDelegate
+class ScTypesDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 public:
-    CsTypesDelegate(QObject *parent = nullptr);
+    ScTypesDelegate(QObject *parent = nullptr);
     QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
                const QModelIndex &index) const;

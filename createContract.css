@@ -1,9 +1,44 @@
+/**************************** Contracts Wizard*************************************************/
+QWidget#CsAllTypesWidget
+{
+    background-color: white;
+}
+
+
 QFrame#csTypeWidget
 {
     margin: 0px;
     border: 1px solid grey;
     background-color: #ededed;
 }
+
+QFrame#csTypeWidget .QLabel#labelType
+{
+    font: bold 14px;
+}
+
+QFrame#csTypeWidget .QLabel#labelDescription
+{
+    font: 12px;
+}
+
+QListView#listViewSC_Types
+{
+    border: 0px;
+    background-color: transparent;
+}
+
+QLabel#labelTytleCsAllTypes
+{
+    border: 1px transparent;
+    border-radius: 7px;
+    padding: 2px;
+    color: white;
+    background-image:url(://imgs/labelChooseType.png) no-repeat center center fixed;
+    font-size: 17px
+}
+
+/**************************** Edit Contract Widget*************************************************/
 
 QWidget#EditContract
 {
@@ -32,17 +67,11 @@ QWidget#EditContract .QFrame
 
 QWidget#EditContract .CodeEditor#codeEdit{
     border: 1px solid black;
-    /*border-radius: 10px;
-    padding: 5px;*/
 }
 
 QWidget#EditContract  .QLabel#labelFileName
 {
-    /*border: 1px solid black;
-    border-radius: 10px;*/
     color: #E5E4E2;
-    /*background-color: #98AFC7;*/
-    /*background-color: white;*/
     min-height:25;
     max-height:25;
 }
@@ -118,21 +147,7 @@ QWidget#EditContract  .QLabel#labelBuildStatus[success=false]
 }
 
 /*QWidget#EditContract  .QStackedWidget#stackedWidget  .QWidget#CsAllTypesWidget .QListView#listViewSC_Types*/
-QListView#listViewSC_Types
-{
-    border: 0px;
-    background-color: transparent;
-}
 
-QLabel#labelTytleCsAllTypes
-{
-    border: 1px transparent;
-    border-radius: 7px;
-    padding: 2px;
-    color: white;
-    background-image:url(://imgs/labelChooseType.png) no-repeat center center fixed;
-    font-size: 17px
-}
 
 QWidget#EditContract .QFrame#toolsFrame .QPushButton
 {

@@ -1,9 +1,9 @@
-#include "cstypesdelegate.h"
+#include "sctypesdelegate.h"
 #include <QPainter>
 #include <QPaintDevice>
 #include <QFile>
 #include <QApplication>
-#include "cstypewidget.h"
+#include "sctypewidget.h"
 
 
 //Shadow parameters
@@ -19,9 +19,9 @@
 //height of widget (unselected)
 #define defHeightWgtUnSelected 100
 //vertical padding of widget (top)
-#define defPaddingTop 10
+#define defPaddingTop 5
 //height of item (without spacing from qlistview)
-#define defHeightItem defHeightWgtSelected + DISTANCE + defPaddingTop + 15
+#define defHeightItem defHeightWgtSelected + DISTANCE + defPaddingTop + 5
 //padding of widget in qlistview
 #define defPaddingHor 25
 #define defPaddingHorSelected 22
@@ -31,12 +31,12 @@ QT_BEGIN_NAMESPACE
 QT_END_NAMESPACE
 
 
-CsTypesDelegate::CsTypesDelegate(QObject *parent):
+ScTypesDelegate::ScTypesDelegate(QObject *parent):
     QStyledItemDelegate(parent)
 {
 }
 
-void CsTypesDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+void ScTypesDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
            const QModelIndex &index) const
 {
     QStyleOptionViewItem opt = option;
@@ -91,12 +91,12 @@ void CsTypesDelegate::paint(QPainter *painter, const QStyleOptionViewItem &optio
     painter->restore();
     painter->end();
 
-    auto model = qobject_cast<const CsTypesModel *>(index.model());
-    CsTypesItem itemData;
-    itemData.strDescription = model->data(index, CsTypesModel::DescriptionRole).toString();
+    auto model = qobject_cast<const ScTypesModel *>(index.model());
+    ScTypesItem itemData;
+    itemData.strDescription = model->data(index, ScTypesModel::DescriptionRole).toString();
     itemData.strIcon = model->data(index, Qt::DecorationRole).toString();
-    itemData.strType = model->data(index, CsTypesModel::TypeRole).toString();
-    csTypeWidget widget(itemData);
+    itemData.strType = model->data(index, ScTypesModel::TypeRole).toString();
+    ScTypeWidget widget(itemData);
 
     widget.setGeometry(QRect(offset,sz));
     QWidget* topWidget = QApplication::topLevelAt(option.widget->mapToGlobal(QPoint(0,0)));
@@ -107,7 +107,7 @@ void CsTypesDelegate::paint(QPainter *painter, const QStyleOptionViewItem &optio
 
 }
 
-QSize CsTypesDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+QSize ScTypesDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     Q_UNUSED(index)
     return QSize(option.rect.width(), defHeightItem);

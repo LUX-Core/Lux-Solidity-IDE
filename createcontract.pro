@@ -25,10 +25,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-    cstypewidget.cpp \
-    cstypesmodel.cpp \
-    cstypesdelegate.cpp \
-    csalltypeswidget.cpp \
     codeeditor.cpp \
     highlighter.cpp \
     find/findwidget.cpp \
@@ -36,13 +32,14 @@ SOURCES += \
     find/treewidgetfindresults.cpp \
     searchwgt.cpp \
     editcontract.cpp \
-    allopenfilesmodel.cpp
+    allopenfilesmodel.cpp \
+    scwizardwgt.cpp \
+    scalltypeswidget.cpp \
+    sctypesdelegate.cpp \
+    sctypesmodel.cpp \
+    sctypewidget.cpp
 
 HEADERS += \
-    cstypewidget.h \
-    cstypesmodel.h \
-    cstypesdelegate.h \
-    csalltypeswidget.h \
     codeeditor.h \
     global.h \
     highlighter.h \
@@ -53,15 +50,21 @@ HEADERS += \
     searchwgt.h \
     editcontract.h \
     guiconstants.h \
-    allopenfilesmodel.h
+    allopenfilesmodel.h \
+    scwizardwgt.h \
+    scalltypeswidget.h \
+    sctypesdelegate.h \
+    sctypesmodel.h \
+    sctypewidget.h
 
 FORMS += \
-    cstypewidget.ui \
     EditContract.ui \
-    csalltypeswidget.ui \
     find/findwidget.ui \
     searchwgt.ui \
-    editcontract.ui
+    editcontract.ui \
+    scwizardwgt.ui \
+    scalltypeswidget.ui \
+    sctypewidget.ui
 
 RESOURCES += \
     res.qrc

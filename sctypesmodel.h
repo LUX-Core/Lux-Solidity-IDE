@@ -3,16 +3,16 @@
 
 #include <QAbstractListModel>
 
-struct CsTypesItem
+struct ScTypesItem
 {
-    CsTypesItem(QString strIcon,
+    ScTypesItem(QString strIcon,
                    QString strType,
                    QString strDescription):
                    strIcon(strIcon),
                    strType(strType),
                    strDescription(strDescription)
     {}
-    CsTypesItem():
+    ScTypesItem():
                    strIcon(),
                    strType(),
                    strDescription()
@@ -23,12 +23,12 @@ struct CsTypesItem
 };
 
 
-class CsTypesModel : public QAbstractListModel
+class ScTypesModel : public QAbstractListModel
 {
     Q_OBJECT
 
 public:
-    CsTypesModel(QObject *parent = nullptr);
+    ScTypesModel(QObject *parent = nullptr);
 
     enum DataRole{
         TypeRole = Qt::UserRole + 1,
@@ -44,7 +44,7 @@ public:
 
     bool setData(int iRow, const QVariant &value, int role = Qt::EditRole);
 private:
-    QList<CsTypesItem> items;
+    QList<ScTypesItem> items;
 };
 
 #endif // CsTypesMODEL_H
