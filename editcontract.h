@@ -19,7 +19,7 @@ class QListWidgetItem;
 class QNetworkAccessManager;
 class QSortFilterProxyModel;
 class QTreeWidgetItem;
-class ScAllTypesWidget;
+class ScWizardWgt;
 
 namespace Ui {
 class EditContract;
@@ -42,7 +42,7 @@ private:
     bool bUbuntu {false};
 #endif
     QPointer<SearchWgt> search_Wgt;
-    QPointer<ScAllTypesWidget> sc_wizard_Wgt;
+    QPointer<ScWizardWgt> sc_wizard_Wgt;
     QPointer<QProcess> process_build;
     QPointer<QProcess> process_linux_distrib;
     QPointer<QSortFilterProxyModel> allFilesModel;

@@ -23,7 +23,7 @@
 #include <QCoreApplication>
 #include <QSortFilterProxyModel>
 
-#include "scalltypeswidget.h"
+#include "scwizardwgt.h"
 #include "allopenfilesmodel.h"
 #include "editcontract.h"
 #include "ui_editcontract.h"
@@ -268,7 +268,7 @@ void EditContract::slotWizardSCClick()
 {
     if(sc_wizard_Wgt.isNull())
     {
-        sc_wizard_Wgt = new ScAllTypesWidget(this);
+        sc_wizard_Wgt = new ScWizardWgt(this);
         sc_wizard_Wgt->show();
 
     }

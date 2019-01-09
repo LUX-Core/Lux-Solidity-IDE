@@ -37,7 +37,8 @@ SOURCES += \
     scalltypeswidget.cpp \
     sctypesdelegate.cpp \
     sctypesmodel.cpp \
-    sctypewidget.cpp
+    sctypewidget.cpp \
+    sctokenwgt.cpp
 
 HEADERS += \
     codeeditor.h \
@@ -55,16 +56,16 @@ HEADERS += \
     scalltypeswidget.h \
     sctypesdelegate.h \
     sctypesmodel.h \
-    sctypewidget.h
+    sctypewidget.h \
+    sctokenwgt.h
 
-FORMS += \
-    EditContract.ui \
+FORMS += editcontract.ui \
     find/findwidget.ui \
     searchwgt.ui \
-    editcontract.ui \
     scwizardwgt.ui \
     scalltypeswidget.ui \
-    sctypewidget.ui
+    sctypewidget.ui \
+    sctokenwgt.ui
 
 RESOURCES += \
     res.qrc

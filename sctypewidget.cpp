@@ -1,5 +1,5 @@
 #include "sctypewidget.h"
-#include "ui_cstypewidget.h"
+#include "ui_sctypewidget.h"
 #include "sctypesmodel.h"
 
 #include <QGraphicsDropShadowEffect>

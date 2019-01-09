@@ -1,5 +1,5 @@
 #include "scalltypeswidget.h"
-#include "ui_csalltypeswidget.h"
+#include "ui_scalltypeswidget.h"
 
 #include "sctypesdelegate.h"
 #include "sctypesmodel.h"
@@ -9,16 +9,6 @@ ScAllTypesWidget::ScAllTypesWidget(QWidget *parent) :
     ui(new Ui::CsAllTypesWidget)
 {
     ui->setupUi(this);
-    setAttribute(Qt::WA_DeleteOnClose);
-#if defined(WIN32) || defined(WIN64) || defined(__linux__)
-    setWindowFlags(Qt::Window);
-    setWindowFlag(Qt::WindowMinimizeButtonHint, false);
-    setWindowFlag(Qt::WindowMaximizeButtonHint, false);
-#endif
-#ifdef __APPLE__
-    setWindowFlags(Qt::Window|Qt::WindowStaysOnTopHint
-                   | Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::CustomizeWindowHint);
-#endif
     //fill in cs types list
     {
         ScTypesModel * model = new ScTypesModel(this);
@@ -34,6 +24,18 @@ ScAllTypesWidget::ScAllTypesWidget(QWidget *parent) :
         ui->listViewSC_Types->setMouseTracking(true);
     }
 
+    ui->widgetTytle->hide();
+
+    connect(ui->listViewSC_Types, &QListView::clicked,
+            this, &ScAllTypesWidget::slotItemClicked);
+}
+
+void ScAllTypesWidget::slotItemClicked(const QModelIndex &index)
+{
+    if(_TokenType == index.row())
+        emit goToToken();
+    if(_CrowdsaleType == index.row())
+        emit goToCrowdSale();
 }
 
 ScAllTypesWidget::~ScAllTypesWidget()

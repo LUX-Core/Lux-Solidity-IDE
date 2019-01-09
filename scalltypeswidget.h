@@ -20,6 +20,13 @@ private:
                        _CrowdsaleType,
                        _numTypes};
     Ui::CsAllTypesWidget *ui;
+
+private slots:
+    void slotItemClicked(const QModelIndex &index);
+
+signals:
+    void goToToken();
+    void goToCrowdSale();
 };
 
 #endif // CSALLTYPESWIDGET_H

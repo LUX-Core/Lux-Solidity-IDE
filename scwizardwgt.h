@@ -17,6 +17,7 @@ public:
 
 private:
     Ui::scWizardWgt *ui;
+
 };
 
 #endif // SCWIZARDWGT_H
