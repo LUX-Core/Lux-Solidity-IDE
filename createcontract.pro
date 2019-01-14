@@ -89,7 +89,7 @@ contracts.path = $$OUT_PWD/SolCompilers/contracts
 contracts.files += openzeppelin-solidity/contracts/*
 INSTALLS +=contracts
 
-LIBS += -L$$PWD/depends/lib/ -lquazip
+LIBS += -L$$PWD/depends/lib/ -lz
 
 INCLUDEPATH += $$PWD/depends/include
 DEPENDPATH += $$PWD/depends/include

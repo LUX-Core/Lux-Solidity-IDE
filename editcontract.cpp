@@ -1269,7 +1269,7 @@ void EditContract::slotDownSolcFinished()
     {
         file_compiler.write(dataReply);
         file_compiler.close();
-        auto list = JlCompress::extractDir(&file_compiler, versionsDir.absoluteFilePath(version + "/output"));
+        //auto list = JlCompress::extractDir(&file_compiler, versionsDir.absoluteFilePath(version + "/output"));
 //variant with sudo apt install libssl-dev unzip
 #if 0
         QProcess proc;
@@ -1287,6 +1287,7 @@ void EditContract::slotDownSolcFinished()
 
         if(QProcess::NormalExit == proc.exitStatus())
 #endif
+#if 0
         if(!list.isEmpty())
         {
             QFile::remove(versionsDir.absoluteFilePath(version + "/solc.zip"));
@@ -1301,6 +1302,7 @@ void EditContract::slotDownSolcFinished()
             }
             output.removeRecursively();
         }
+#endif
     }
 
 
