@@ -2,7 +2,7 @@
     <qresource prefix="/">
         <file>createContract.css</file>
         <file>imgs/contract.png</file>
-        <file>imgs/cryptotoken.png</file>
+        <file>imgs/LSRtoken.png</file>
         <file>imgs/labelChooseType.png</file>
         <file>imgs/close.png</file>
         <file>imgs/find.png</file>

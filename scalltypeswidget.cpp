@@ -15,10 +15,10 @@ ScAllTypesWidget::ScAllTypesWidget(QWidget *parent) :
         model->insertRows(0,_numTypes);
         model->setData(_CrowdsaleType, "", Qt::DecorationRole);
         model->setData(_CrowdsaleType, "Crowdsale contract", ScTypesModel::TypeRole);
-        model->setData(_CrowdsaleType, "Start your ICO/Token sale", ScTypesModel::DescriptionRole);
-        model->setData(_TokenType, "://imgs/cryptotoken.png", Qt::DecorationRole);
+        model->setData(_CrowdsaleType, "Start ICO/IPO/Token sale", ScTypesModel::DescriptionRole);
+        model->setData(_TokenType, "://imgs/LSRtoken.png", Qt::DecorationRole);
         model->setData(_TokenType, "Token contract", ScTypesModel::TypeRole);
-        model->setData(_TokenType, "Create a Token", ScTypesModel::DescriptionRole);
+        model->setData(_TokenType, "Create Token", ScTypesModel::DescriptionRole);
         ui->listViewSC_Types->setModel(model);
         ui->listViewSC_Types->setItemDelegate(new ScTypesDelegate(this));
         ui->listViewSC_Types->setMouseTracking(true);
